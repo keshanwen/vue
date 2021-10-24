@@ -16,12 +16,16 @@ class Observer {
   // 思考？这里为什么要传入val,obj[key]不就可以拿到值了吗？
   defineReactive(obj,key,val) {
     const that = this
+    // 负责收集依赖，并发送通知
+    let dep = new Dep()
     // 如果val是对象,把val内部的属性转换成响应式数据
     this.walk(val)
     Object.defineProperty(obj,key,{
       enumerable: true,
       configurable: true,
       get() {
+        // 收集依赖
+        Dep.target && dep.addSub(Dep.target)
         return val
        // return obj[key] 因为会发生死递归，循环引用了.
       },
@@ -32,6 +36,7 @@ class Observer {
         val = newValue
         that.walk(newValue)
         // 发送通知
+        dep.notify()
       }
     })
   }
