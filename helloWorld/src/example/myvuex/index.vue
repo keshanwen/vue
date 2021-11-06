@@ -2,14 +2,25 @@
    <div>
      i am vuex demo
      <h1>
-       {{ this.$store.getters.myName }}
+       {{ this.$store.state.num }}
      </h1>
+     <button @click="add">点我</button>
    </div>
 </template>
 
 <script>
 export default {
-  name: 'myVuex'
+  name: 'myVuex',
+
+  mounted () {
+    console.log(this.$store)
+  },
+
+  methods: {
+    add() {
+      this.$store.commit('addNum',10)
+    }
+  }
 }
 </script>
 

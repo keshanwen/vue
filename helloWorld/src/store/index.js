@@ -6,7 +6,8 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
-    name:'kebi'
+    name:'kebi',
+    num:0
   },
   getters: {
     myName(state){
@@ -14,6 +15,10 @@ export default new Vuex.Store({
     }
   },
   mutations: {
+    addNum(state, payload){
+      console.log(state, payload);
+      state.num += payload;
+    }
   },
   actions: {
   },
