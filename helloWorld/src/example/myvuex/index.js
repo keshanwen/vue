@@ -64,6 +64,8 @@ class Store {
     this.initGetters(options)
     /* 将传递进来的mutations放到store上 */
     this.initMutations(options)
+    /* 将传递进来actions放到store上 */
+    this.intiActions(options)
   }
   initGetters(options) {
     /* 
@@ -93,8 +95,23 @@ class Store {
       }
     }
   }
-  commit(type,playload) {
+  intiActions(options) {
+    // 1,拿到传递进来的ACTIONS
+    let actions = options.actions || {}
+    // 2，在store上新增一个actions的属性
+    this.actions = {}
+    // 3, 将传递进来的actions中的方法添加到当前store的actions上
+    for (let key in actions) {
+      this.actions[key] = (playload) => {
+          actions[key](this,playload)
+      }
+    }
+  }
+  commit = (type,playload) => {
     this.mutations[type](playload)
+  }
+  dispatch = (type,playload) => {
+    this.actions[type](playload)
   }
 }
 

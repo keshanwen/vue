@@ -5,6 +5,8 @@
        {{ this.$store.state.num }}
      </h1>
      <button @click="add">点我</button>
+      <p>{{this.$store.state.age}}</p>
+    <button @click="myFn2">我是按钮2</button>
    </div>
 </template>
 
@@ -19,6 +21,9 @@ export default {
   methods: {
     add() {
       this.$store.commit('addNum',10)
+    },
+    myFn2(){
+      this.$store.dispatch('asyncAddAge', 5);
     }
   }
 }
