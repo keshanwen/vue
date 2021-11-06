@@ -39,7 +39,31 @@ const install = (Vue,options) => {
 
 class Store {
   constructor(options) {
-    this.options = options;
+    //this.options = options;
+    /* 
+      将创建的store时需要共享的数据添加到store上面
+      这样将来我们就能通过this.$store拿到这个store
+      既然能拿到这个store，我们就可以通过.state拿到需要共享的属性
+    */
+     this.state = options.state
+     /* 
+     将传递进来的getters放到store上
+     */
+    //this.getters = options.getters;
+    /* 
+    1,拿到传递进来的getters
+    */
+   let getters = options.getters || {}
+   /* 2,在store上新增一个getters属性 */
+   this.getters = {}
+   /* 3,将传递进来的getters中的方法添加到当前store的getters上 */
+   for (let key in getters) {
+    Object.defineProperty(this.getters,key,{
+      get: () => {
+        return getters[key](this.state)
+      }
+    })
+   }
   }
 }
 
