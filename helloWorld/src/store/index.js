@@ -1,6 +1,6 @@
 import Vue from 'vue'
-import Vuex from 'vuex'
-// import Vuex from '../example/myvuex/index.js'
+//import Vuex from 'vuex'
+import Vuex from '../example/myvuex/index.js'
 Vue.use(Vuex)
 let home = {
   state: {
