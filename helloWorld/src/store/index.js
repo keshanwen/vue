@@ -90,19 +90,6 @@ let account = {
   }
 }
 export default new Vuex.Store({
-  /*
-  1.过去我们将所有模块的数据都放到state中共享, 但是这样会导致命名匮乏的问题
-  例如: 我们有三个模块 首页 / 个人中心 / 登录
-  首页中需要共享name, 个人中心中也需要共享name / 登录中也需要共享nanme
-  并且这三个name的取值还不一样, 那么为了能把这三条数据放到同一个state中, 我们就必须指定不同的名称
-  state:{
-    homeName: 'www',
-    accountName: 'it666',
-    loginName: 'com'
-  }
-  2.为了解决这个问题, Vuex就推出了模块化共享数据
-  通过模块化共享数据, 我们可以将不同模块共享的数据放到不同的state中
-  * */
   // 用于保存全局共享数据
   state: {
     globalName: 'lnj'
