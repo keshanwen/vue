@@ -60,6 +60,8 @@ class Store {
         // 提取模块信息
         this.modules = new ModuleCollection(options);
         console.log(this.modules);
+        // 安装子模块的数据
+        this.initModules([],this.modules.root)
         /*
         let root = {
             _raw: rootModule,
@@ -84,6 +86,21 @@ class Store {
             }
         }
         * */
+    }
+    initModules(arr,rootModule) {
+      console.log(arr,'arr..')
+      // 如果当前是子模块，那么就需要将数据安装到this.state上
+      if (arr.length > 0) {
+        let parent = arr.splice(0, arr.length-1).reduce((state, currentKey)=>{
+            return state[currentKey];
+        }, this.state);
+        Vue.set(parent, arr[arr.length-1], rootModule._state);
+      }
+      // 如果当前不是子模块，那么就需要从根模块中取出子模块的信息来安装
+      for (let childrenModuleName in rootModule._children) {
+        let  childrenModule = rootModule._children[childrenModuleName];
+        this.initModules(arr.concat(childrenModuleName), childrenModule);
+      }
     }
     dispatch = (type, payload)=>{ // 'asyncAddAge', 5
         this.actions[type](payload); // this.actions[asyncAddAge](5);

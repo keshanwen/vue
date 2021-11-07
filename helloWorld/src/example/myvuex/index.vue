@@ -1,26 +1,26 @@
 <template>
   <div id="app">
-    <!-- <p>{{this.$store.state.globalName}}</p>
-    <p>{{this.$store.getters.getGlobalName}}</p>
+    <p>{{this.$store.state.globalName}}</p>
+    <!-- <p>{{this.$store.getters.getGlobalName}}</p> -->
     <button @click="globalFn1">同步操作</button>
     <button @click="globalFn2">异步操作</button>
     <hr>
-    <p>{{this.$store.state.home.name}}</p> -->
+    <p>{{this.$store.state.home.name}}</p>
     <!--注意点: 如果获取的是模块中state共享的数据, 那么需要加上模块的名称-->
     <!--注意点: 如果获取的是模块中getters共享的数据, 那么不需要加上模块的名称-->
-    <!-- <p>{{this.$store.getters.getHomeName}}</p>
+    <!-- <p>{{this.$store.getters.getHomeName}}</p> -->
     <button @click="homeFn1">同步操作</button>
     <button @click="homeFn2">异步操作</button>
     <hr>
     <p>{{this.$store.state.account.name}}</p>
-    <p>{{this.$store.getters.getAccountName}}</p>
+    <!-- <p>{{this.$store.getters.getAccountName}}</p> -->
     <button @click="accountFn1">同步操作</button>
     <button @click="accountFn2">异步操作</button>
     <hr>
     <p>{{this.$store.state.account.login.name}}</p>
-    <p>{{this.$store.getters.getLoginName}}</p>
+    <!-- <p>{{this.$store.getters.getLoginName}}</p> -->
     <button @click="loginFn1">同步操作</button>
-    <button @click="loginFn2">异步操作</button> -->
+    <button @click="loginFn2">异步操作</button>
   </div>
 </template>
 
