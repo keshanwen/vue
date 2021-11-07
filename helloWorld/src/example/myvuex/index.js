@@ -51,12 +51,6 @@ class Store {
     constructor(options){
         // 将传递进来的state放到Store上
         Vue.util.defineReactive(this, 'state', options.state);
-        // 将传递进来的getters放到Store上
-        this.initGetters(options);
-        // 将传递进来的mutations放到Store上
-        this.initMutations(options);
-        // 将传递进来的actions放到Store上
-        this.initActions(options);
         // 提取模块信息
         this.modules = new ModuleCollection(options);
         console.log(this.modules);
@@ -96,6 +90,12 @@ class Store {
         }, this.state);
         Vue.set(parent, arr[arr.length-1], rootModule._state);
       }
+        // 将传递进来的getters放到Store上
+        this.initGetters(rootModule._raw);
+        // 将传递进来的mutations放到Store上
+        this.initMutations(rootModule._raw);
+        // 将传递进来的actions放到Store上
+        this.initActions(rootModule._raw);
       // 如果当前不是子模块，那么就需要从根模块中取出子模块的信息来安装
       for (let childrenModuleName in rootModule._children) {
         let  childrenModule = rootModule._children[childrenModuleName];
@@ -103,34 +103,37 @@ class Store {
       }
     }
     dispatch = (type, payload)=>{ // 'asyncAddAge', 5
-        this.actions[type](payload); // this.actions[asyncAddAge](5);
+    this.actions[type].forEach(fn=>fn(payload));
     }
     initActions(options){
         // 1.拿到传递进来的actions
         let actions = options.actions || {};
         // 2.在Store上新增一个actions的属性
-        this.actions = {};
+        this.actions = this.actions || {};
         // 3.将传递进来的actions中的方法添加到当前Store的actions上
         for(let key in actions){
-            this.actions[key] = (payload)=>{ // 5
-                actions[key](this, payload); // asyncAddAge(this, 5);
-            }
+          this.actions[key] = this.actions[key] || []
+          this.actions[key].push((payload)=>{ // 5
+              actions[key](this, payload); // asyncAddAge(this, 5);
+          })
         }
     }
     commit = (type, payload)=>{ // 'addAge', 5
         // console.log(this);
-        this.mutations[type](payload); //  this.mutations[addAge](5);
+        this.mutations[type].forEach(fn=>fn(payload));
+    
     }
     initMutations(options){
         // 1.拿到传递进来的mutations
         let mutations = options.mutations || {};
         // 2.在Store上新增一个mutations的属性
-        this.mutations = {};
+        this.mutations = this.mutations || {};
         // 3.将传递进来的mutations中的方法添加到当前Store的mutations上
         for(let key in mutations){
-            this.mutations[key] = (payload)=>{ // 10
-                mutations[key](this.state, payload); // addNum(this.state, 10);
-            }
+          this.mutations[key] = this.mutations[key] || []
+          this.mutations[key].push((payload)=>{
+            mutations[key](options.state, payload);
+        });
         }
     }
     initGetters(options){
@@ -138,12 +141,12 @@ class Store {
         // 1.拿到传递进来的getters
         let getters = options.getters || {};
         // 2.在Store上新增一个getters的属性
-        this.getters = {};
+        this.getters = this.getters || {};
         // 3.将传递进来的getters中的方法添加到当前Store的getters上
         for(let key in getters){
             Object.defineProperty(this.getters, key, {
                 get:()=>{
-                    return getters[key](this.state);
+                  return getters[key](options.state);
                 }
             })
         }
