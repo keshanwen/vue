@@ -24,6 +24,6 @@ let app = document.querySelector('#app')
 let oldVnode = patch(app, vnode)
 
 // 假设的时刻
-vnode = h('div', 'Hello Snabbdom')
+// vnode = h('div', 'Hello Snabbdom')
 
-patch(oldVnode, vnode)
+// patch(oldVnode, vnode)

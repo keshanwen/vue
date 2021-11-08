@@ -1,25 +1,24 @@
-// 2. div中放置子元素 h1,p
-import { h, init } from 'snabbdom'
+import { h,init } from 'snabbdom'
+
 
 let patch = init([])
 
-let vnode = h('div#container', [
-  h('h1', 'Hello Snabbdom'),
-  h('p', '这是一个p标签')
+let vnode = h('div#container',[
+  h('h1','hello keke'),
+  h('p','这是一个p标签哦')
 ])
 
 let app = document.querySelector('#app')
 
-let oldVnode = patch(app, vnode)
+let olVnode = patch(app,vnode)
 
 setTimeout(() => {
-  vnode = h('div#container', [
-    h('h1', 'Hello World'),
-    h('p', 'Hello P')
-  ])
-  patch(oldVnode, vnode)
+ vnode = h('div#newid',[
+   h('h1','i am h new'),
+   h('p','这是一个p标签哦')
+ ])
+ patch(olVnode,vnode)
 
-  // 清空页面元素 -- 错误
-  // patch(oldVnode, null)
-  patch(oldVnode, h('!'))
-}, 2000);
+ // 清空页面元素
+ // patch(olVnode,null) 错误写法
+},2000)
