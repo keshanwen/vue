@@ -384,21 +384,31 @@ export function init(modules: Array<Partial<Module>>, domApi?: DOMAPI) {
     }
     /* 如果vnode.text 未定义 */
     if (isUndef(vnode.text)) {
+      /* 如果新老节点都有children */
       if (isDef(oldCh) && isDef(ch)) {
+        /* 使用diff算法对比子节点，更新子节点 */
         if (oldCh !== ch) updateChildren(elm, oldCh, ch, insertedVnodeQueue);
       } else if (isDef(ch)) {
+        /* 如果新节点有 children,老节点没有 children  */
+        /* 如果老节点有text,清空DOM元素的内容 */
         if (isDef(oldVnode.text)) api.setTextContent(elm, "");
+        /* 批量添加子节点 */
         addVnodes(elm, null, ch, 0, ch.length - 1, insertedVnodeQueue);
       } else if (isDef(oldCh)) {
+        /* 如果老节点有children,新节点没有children */
+        /* 批量移除子节点 */
         removeVnodes(elm, oldCh, 0, oldCh.length - 1);
       } else if (isDef(oldVnode.text)) {
+        /* 如果老节点有 text,清空Dom 元素 */
         api.setTextContent(elm, "");
       }
     } else if (oldVnode.text !== vnode.text) {
-      /*  */
+      /* 如果没有设置 vnode.text */
       if (isDef(oldCh)) {
+        /* 如果老节点有 children,移除 */
         removeVnodes(elm, oldCh, 0, oldCh.length - 1);
       }
+      /* 设置DOM 元素的 textContent 为vnode.text */
       api.setTextContent(elm, vnode.text!);
     }
     /* 最后执行用户设置的 postpatch 钩子函数 */
