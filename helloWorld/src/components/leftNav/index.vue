@@ -14,6 +14,7 @@ export default {
       list: [
         {name: '左右伸缩',url: 'leftRightDrag'},
         {name: 'vuex',url: 'vuexDemo'},
+        {name: 'table',url: 'table'},
       ]
     }
   }
