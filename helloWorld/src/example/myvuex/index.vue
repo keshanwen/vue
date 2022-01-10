@@ -31,8 +31,39 @@ export default {
   name: 'myvuex',
   mounted() {
     console.log(this.$store);
+  this.demo()
   },
   methods: {
+    first(time) {
+      return new Promise( (res,rej) => {
+        setTimeout(() => {
+          res()
+        },time)
+      })
+    },
+    demo() {
+      this.demo1('params~demo1')
+      this.demo2('params~demo2')
+      this.demo3('params~demo3')
+    },
+    async demo1(params) {
+      await this.first(3000)
+      this.$nextTick( () => {
+        console.log(params,'~~~demo1')
+      })
+    },
+    async demo2(params) {
+      await this.first(2000)
+      this.$nextTick( () => {
+        console.log(params,'~~~demo2')
+      })
+    },
+    async demo3(params) {
+      await this.first(1000)
+      this.$nextTick( () => {
+        console.log(params,'~~~demo3')
+      })
+    },
     globalFn1(){
       this.$store.commit('changeGlobalName', 10);
     },
