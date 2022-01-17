@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+  
+</body>
+</html>
+<script>
+ 'use strict'
+    // 问题1： set 和 deleteProperty 中需要返回布尔类型的值
+    //        在严格模式下，如果返回 false 的话会出现 Type Error 的异常
+    const target = {
+      foo: 'xxx',
+      bar: 'yyy'
+    }
+    // Reflect.getPrototypeOf()
+    // Object.getPrototypeOf()
+   /*  const proxy = new Proxy(target, {
+      get (target, key, receiver) {
+        // return target[key]
+        return Reflect.get(target, key, receiver)
+      },
+      set (target, key, value, receiver) {
+        // target[key] = value
+       return Reflect.set(target, key, value, receiver)
+      },
+      deleteProperty (target, key) {
+        // delete target[key]
+        return Reflect.deleteProperty(target, key)
+      }
+    })
+
+    proxy.foo = 'zzz'
+    delete proxy.foo
+    console.log(proxy)
+
+ */
+
+
+ /* 问题二: Proxy 和 Reflect 中使用的 receiver */
+
+ // proxy 中的receiver: proxy 或者继承proxy的对象
+ // Reflect 中的receiver: 如果target 对象中设置了 getter ,getter 中的this 指向receiver
+
+
+ const obj = {
+   get foo() {
+     console.log(this)
+     return this.bar
+   }
+ }
+
+ const proxy = new Proxy(obj,{
+   get(target,key,receiver) {
+    if (key === 'bar') {
+      return 'value-bar'
+    }
+    return Reflect.get(target,key,receiver)
+   }
+ })
+
+ console.log(proxy.foo)
+
+
+
+
+
+
+
+
+
+</script>
