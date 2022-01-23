@@ -116,6 +116,14 @@ function toRefs(proxy) {
   return ret
 }
 
+function computed(getter) {
+  const result = ref()
+
+  effect(() => result.value = getter())
+
+  return result
+}
+
 
 
 

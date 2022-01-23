@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+  
+</body>
+</html>
+<script src="./reactivity/index.js"></script>
+<script>
+
+
+
+
+
+const product = reactive({
+  name: 'iPhone',
+  price: 5000,
+  count: 3
+})
+
+let total = computed( () => {
+  return product.price * product.count
+})
+
+console.log(total.value)
+
+product.price = 3000
+console.log(total.value)
+
+product.count = 4
+console.log(total.value)
+
+
+
+
+
+</script>
