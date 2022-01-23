@@ -71,4 +71,26 @@ function reactive (target) {
   return new Proxy(target,handler)
 }
 
+function ref(raw) {
+  // 判断 raw 是不是 ref 创建的对象，如果是的话直接返回
+
+  let value = convert(raw)
+  const r = {
+    __v_isRef: true,
+    get value () {
+      track(r,'value')
+      return value
+    },
+    set value (newValue) {
+      if (newValue !== value) {
+        raw = newValue
+        value = convert(raw)
+        trigger(r,'value')
+      }
+    }
+  }
+
+  return r
+}
+
 
