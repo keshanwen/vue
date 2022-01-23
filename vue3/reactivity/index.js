@@ -24,6 +24,17 @@ function track(target,key) {
   dep.add(activeEffect)
 } 
 
+function trigger(target,key) {
+  const depsMap = targetMap.get(target)
+  if (!depsMap) return
+  const dep = depsMap.get(key)
+  if (dep) {
+    dep.forEach(effect => {
+      effect()
+    });
+  } 
+}
+
 
 
 function reactive (target) {
@@ -42,6 +53,7 @@ function reactive (target) {
       if (oldValue !== value) {
         result = Reflect.set(target, key, value, receiver)
         // 触发更新
+        trigger(target,key)
       }
       return result
     },
@@ -50,6 +62,7 @@ function reactive (target) {
       const result = Reflect.deleteProperty(target,key)
       if (hadKey && result) {
         // 触发更新
+        trigger(target,key)
       }
       return result
     }
