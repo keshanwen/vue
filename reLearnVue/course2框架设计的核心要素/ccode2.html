@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+   <div id="aaa">
+    {{ username }}
+   </div> 
+</body>
+</html>
+<script src="https://unpkg.com/vue@next"></script>
+<script>
+
+const { createApp } = Vue
+// createApp 返回一个提供应用上下文的应用实例。应用实例挂载的整个组件树共享同一个上下文
+
+// createApp({
+//     render: () => null
+// }).mount('#aaa')
+
+createApp({
+    props: ['username']
+},{
+    username: 'kebi'
+}).mount('#aaa')
+</script>
