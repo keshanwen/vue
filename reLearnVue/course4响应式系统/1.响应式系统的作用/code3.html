@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+</html>
+<script>
+
+const bucket = new Set()
+const data = { text: 'hello wrold' }
+const obj = new Proxy(data,{
+    get(target,key) {
+        // 将副作用函数 activeEffect 添加到存储副作用函数的捅中
+        bucket.add(activeEffect)
+        return target[key]
+    },
+    set(target,key,newVal) {
+        target[key] = newVal
+        bucket.forEach( fn => fn())
+    }
+})
+
+
+// 用一个全局变量存储当前激活的 effect 函数
+let activeEffect
+function effect(fn) {
+    // 当调用 effect 注册副作用函数时，将副作用函数复制给 activeEffect函数
+    activeEffect = fn
+    // 执行副作用函数
+    fn()
+}
+
+effect(() => {
+    console.log('effect run')
+    document.body.innerHTML = obj.text
+})
+
+
+
+</script>
