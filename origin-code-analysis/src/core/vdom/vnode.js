@@ -39,9 +39,9 @@ export default class VNode {
     componentOptions?: VNodeComponentOptions,
     asyncFactory?: Function
   ) {
-    this.tag = tag
-    this.data = data
-    this.children = children
+    this.tag = tag // 当前标签名
+    this.data = data  // 当前节点数据
+    this.children = children // 当前节点子节点
     this.text = text
     this.elm = elm
     this.ns = undefined
@@ -49,7 +49,7 @@ export default class VNode {
     this.fnContext = undefined
     this.fnOptions = undefined
     this.fnScopeId = undefined
-    this.key = data && data.key
+    this.key = data && data.key // 当前节点的key属性，被当作节点的标志，用以优化
     this.componentOptions = componentOptions
     this.componentInstance = undefined
     this.parent = undefined

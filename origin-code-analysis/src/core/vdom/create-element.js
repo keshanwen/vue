@@ -44,12 +44,18 @@ export function createElement (
   return _createElement(context, tag, data, children, normalizationType)
 }
 
+
+/*
+  _createElement 主要做两件事
+  1, 规范化子节点
+  2，创建vnode节点
+*/
 export function _createElement (
-  context: Component,
-  tag?: string | Class<Component> | Function | Object,
-  data?: VNodeData,
-  children?: any,
-  normalizationType?: number
+  context: Component, // VNODE 当前的上下文环境
+  tag?: string | Class<Component> | Function | Object, // 标签，可以是正常的HTML元素，也可以是Components组件
+  data?: VNodeData, // vnode 数据，其类型为VNODEData
+  children?: any, // vnode 的子节点
+  normalizationType?: number // children 子节点规范化类型
 ): VNode | Array<VNode> {
   if (isDef(data) && isDef((data: any).__ob__)) {
     process.env.NODE_ENV !== 'production' && warn(
@@ -113,7 +119,7 @@ export function _createElement (
         undefined, undefined, context
       )
     // 判断是否是 自定义组件
-    } else if ((!data || !data.pre) && 
+    } else if ((!data || !data.pre) &&
       isDef(Ctor = resolveAsset(context.$options, 'components', tag))) {
       // 查找自定义组件构造函数的声明
       // 根据 Ctor 创建组件的 VNode
