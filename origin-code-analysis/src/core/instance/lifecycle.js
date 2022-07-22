@@ -201,8 +201,8 @@ export function mountComponent (
     vm._update 更新 DOM
 
     watcher 这里起到两个作用
-    1是初始化的时候执行回调函数
-    2是当vm 实例中检测的数据发生变化的时候执行回调函数
+    1是初始化的时候执行回调函数(依赖收集)
+    2是当vm 实例中检测的数据发生变化的时候执行回调函数（派发更新）
   */
   new Watcher(vm, updateComponent, noop, {
     before () {
