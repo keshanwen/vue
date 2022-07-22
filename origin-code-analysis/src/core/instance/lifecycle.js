@@ -60,28 +60,39 @@ export function lifecycleMixin (Vue: Class<Component>) {
   // 首次渲染会调用，数据更新会调用
   Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
     const vm: Component = this
+    // 缓存更新之前的元素的 $el 和 _vnode
     const prevEl = vm.$el
     const prevVnode = vm._vnode
+    //当前的实例设置为活跃实例
     const restoreActiveInstance = setActiveInstance(vm)
+    // 传入最新的 vnode
     vm._vnode = vnode
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
+    // prevVnode 不存在说明是第一次渲染
+    // _patch_ 主要是将 vnode 转换成dom，渲染在视图中
     if (!prevVnode) {
       // initial render
+      // 第一次渲染
       vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */)
     } else {
       // updates
+      // 更新
       vm.$el = vm.__patch__(prevVnode, vnode)
     }
+    // 调用return 里面的方法返回原来的活跃实例
     restoreActiveInstance()
     // update __vue__ reference
+    // 之前的el属性添加_vue_属性并设置为null
     if (prevEl) {
       prevEl.__vue__ = null
     }
+    // _vue_指向更新时接收到的 vue 实例
     if (vm.$el) {
       vm.$el.__vue__ = vm
     }
     // if parent is an HOC, update its $el as well
+    // 如果当前实例的父级 $parent 是高价组件，那么也更新其$el
     if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
       vm.$parent.$el = vm.$el
     }
