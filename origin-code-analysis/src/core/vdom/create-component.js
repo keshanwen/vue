@@ -98,6 +98,12 @@ const componentVNodeHooks = {
 
 const hooksToMerge = Object.keys(componentVNodeHooks)
 
+/*
+
+3个关键步骤
+构造子类构造函数，安装组件钩子函数，实例化vnode
+
+*/
 export function createComponent (
   Ctor: Class<Component> | Function | Object | void,
   data: ?VNodeData,
@@ -109,12 +115,14 @@ export function createComponent (
     return
   }
 
+  // baseCtor 实际上是vue
   const baseCtor = context.$options._base
 
   // plain options object: turn it into a constructor
   // 如果 Ctor 不是一个构造函数，是一个对象
   // 使用 Vue.extend() 创造一个子组件的构造函数
   // render: h => h(App)  这种情况会进入
+  // 构造子类构造函数
   if (isObject(Ctor)) {
     Ctor = baseCtor.extend(Ctor)
   }
@@ -196,6 +204,7 @@ export function createComponent (
   const name = Ctor.options.name || tag
   // 创建自定义组件的 VNode，设置自定义组件的名字
   // 记录this.componentOptions = componentOptions
+  // 实例化 Vnode 。需要注意的是和普通元素节点的vnode 不同，组件的vnode是没有children的。这点很关键，在之后的patch过程我们会在提
   const vnode = new VNode(
     `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
     data, undefined, undefined, undefined, context,
