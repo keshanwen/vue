@@ -13,25 +13,30 @@
 <script>
 
 const data = {
-    text: 'helloWorld',
-    ok: true
+    foo: true,
+    bar: true,
+    num: 1
 }
-let activeEffect
+let activeEffect,
+    effectStack = []
 const bucket = new WeakMap() // 副作用函数的桶 使用WeakMap
 
 function effect(fn) {
-    // 方便理解把，effectFn 看成 fn函数，（副作用函数）
     const effectFn = () => {
         // 副作用函数执行之前，将该函数从其所在的依赖集合中删除
         cleanup(effectFn)
         // 当effectFn执行时，将其设置为当前激活的副作用函数
         activeEffect = effectFn
+        effectStack.push(activeEffect) // 将当前副作用函数推进栈
         fn()
+        // 当前副作用函数结束后，将此函数推出栈顶，并将activeEffect指向栈顶的副作用函数
+        // 这样：响应式数据就只会收集直接读取其值的副作用函数作为依赖
+        effectStack.pop()
+        activeEffect = effectStack[effectStack.length - 1]
     }
     effectFn.deps = [] // activeEffect.deps用来存储所有与该副作用函数相关联的依赖集合
     effectFn()
 }
-
 
 function cleanup(effectFn) {
     for (let i = 0, len = effectFn.deps.length; i < len; i++) {
@@ -67,32 +72,42 @@ function track(target, key) {
     deps.add(activeEffect) // 将副作用函数加进去
     // deps就是当前副作用函数存在联系的依赖集合
     // 将其添加到activeEffect.deps数组中
-    // 注意理解这里，将 deps (set集合)添加到 副作用函数的deps属性中，后面在执行副作用函数前会清空副作用函数的集合。（就是所有副作用函数）注意理解地址引用的概念
     activeEffect.deps.push(deps)
 }
-
 
 // trigger函数
 function trigger(target, key) {
     const depsMap = bucket.get(target) // target Map
     if (!depsMap) return;
     const effects = depsMap.get(key) // effectFn Set
-    const effectToRun = new Set(effects)
-    effectToRun && effectToRun.forEach(fn => {
-        if (typeof fn === 'function') fn()
+    // const effectToRun = new Set(effects)
+    // effectToRun && effectToRun.forEach(fn => {
+    //     if (typeof fn === 'function') fn()
+    // })
+    const effectToRun = new Set()
+    effects && effects.forEach( (item) => {
+        // 如果trigger 触发的执行副作用函数与当前正在执行的副作用函数相同，则不触发执行
+        if ( item !== activeEffect ) {
+            effectToRun.add(item)
+        }
     })
+
+    effectToRun.forEach( effectFn => effectFn() )
 }
 
-effect(() => {
-    console.log('effect run')
-    document.body.innerHTML = obj.ok ? obj.text : 'no'
+
+effect( () => {
+    obj.num++
 })
 
-setTimeout(() => {
-    obj.ok = false
-}, 1000)
 
-setTimeout(() => {
-    obj.text = 'ds'
-}, 2000)
+console.log(obj.num)
+
+
+
+
+
+
+
+
 </script>
