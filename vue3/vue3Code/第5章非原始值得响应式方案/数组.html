@@ -6,8 +6,17 @@
 const bucket = new WeakMap()
 const ITERATE_KEY = Symbol()
 
+const reactiveMap = new Map()
+
 function reactive(obj) {
-  return createReactive(obj)
+  const proxy = createReactive(obj)
+
+  const existionProxy = reactiveMap.get(obj)
+  if (existionProxy) return existionProxy
+
+  reactiveMap.set(obj, proxy)
+
+  return proxy
 }
 function shallowReactive(obj) {
   return createReactive(obj, true)
@@ -21,6 +30,34 @@ function shallowReadonly(obj) {
   return createReactive(obj, true, true)
 }
 
+const arrayInstrumentations = {}
+
+;['includes', 'indexOf', 'lastIndexOf'].forEach(method => {
+  const originMethod = Array.prototype[method]
+  arrayInstrumentations[method] = function(...args) {
+    // this 是代理对象，先在代理对象中查找，将结果存储到 res 中
+    let res = originMethod.apply(this, args)
+
+    if (res === false) {
+      // res 为 false 说明没找到，在通过 this.raw 拿到原始数组，再去原始数组中查找，并更新 res 值
+      res = originMethod.apply(this.raw, args)
+    }
+    // 返回最终的结果
+    return res
+  }
+})
+
+
+let shouldTrack = true
+;['push'].forEach(method => {
+  const originMethod = Array.prototype[method]
+  arrayInstrumentations[method] = function(...args) {
+    shouldTrack = false
+    let res = originMethod.apply(this, args)
+    shouldTrack = true
+    return res
+  }
+})
 
 function createReactive(obj, isShallow = false, isReadonly = false) {
   return new Proxy(obj, {
@@ -29,6 +66,10 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
       console.log('get: ', key)
       if (key === 'raw') {
         return target
+      }
+
+      if (Array.isArray(target) && arrayInstrumentations.hasOwnProperty(key)) {
+        return Reflect.get(arrayInstrumentations, key, receiver)
       }
 
       // 非只读的时候才需要建立响应联系
@@ -98,7 +139,7 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
 }
 
 function track(target, key) {
-  if (!activeEffect) return
+  if (!activeEffect || !shouldTrack) return
   let depsMap = bucket.get(target)
   if (!depsMap) {
     bucket.set(target, (depsMap = new Map()))
@@ -112,6 +153,7 @@ function track(target, key) {
 }
 
 function trigger(target, key, type, newVal) {
+  console.log('trigger', key)
   const depsMap = bucket.get(target)
   if (!depsMap) return
   const effects = depsMap.get(key)
@@ -204,17 +246,17 @@ function cleanup(effectFn) {
 // =================================================================
 
 
-const arr = reactive([1, 2, 3, 4, 5])
+const arr = reactive([])
 
 effect(() => {
-  console.log('effect run ~~~~~')
-  for (const val of arr.keys()) {
-    console.log(val)
-  }
+  console.log('effect 1 run')
+  arr.push(1)
 })
 
-arr[1] = 'bar'
-// arr.length = 0
+effect(() => {
+  console.log('effect 2 run')
+  arr.push(2)
+})
 
 
 </script>

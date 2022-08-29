@@ -208,7 +208,8 @@ const arr = reactive(['foo'])
 
 effect(() => {
   for (const key in arr) {
-    console.log(key)
+    console.log('effect run ~~~~~~')
+    console.log(key,' effect run ~~~~~ key')
   }
 })
 
