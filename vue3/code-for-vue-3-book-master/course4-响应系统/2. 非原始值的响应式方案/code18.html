@@ -153,15 +153,15 @@ const instrumentations = {
 
 function createReactive(obj, isShallow = false, isReadonly = false) {
   return new Proxy(obj, {
-    // get(target, key, receiver) {
-    //   if (key === 'raw') return target
-    //   if (key === 'size') {
-    //     track(target, ITERATE_KEY)
-    //     return Reflect.get(target, key, target)
-    //   }
+    get(target, key, receiver) {
+      if (key === 'raw') return target
+      if (key === 'size') {
+        track(target, ITERATE_KEY)
+        return Reflect.get(target, key, target)
+      }
 
-    //   return Reflect.get(instrumentations, key)
-    // }
+      return Reflect.get(instrumentations, key)
+    }
   })
 }
 
