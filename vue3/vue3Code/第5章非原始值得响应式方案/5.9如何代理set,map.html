@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+</html>
+<script>
+
+
+const reactiveMap = new Map()
+function reactive(obj){
+	const proxy = createReactive(obj)
+	const existionProxy = reactiveMap.get(obj)
+	reactiveMap.set(obj, proxy)
+	return proxy
+}
+
+// 在createReactive里封装用于代理Set/Map类型数据的逻辑
+function createReactive(obj, isShallow = false, isReadonly = false){
+	return new Proxy(obj, {
+		get(target, key, receiver){
+			if(key === 'size'){
+				return Reflect.get(target, key, target)
+			}
+			// 将方法雨原始数据对象target绑定后返回
+			return target[key].bind(target)
+		}	
+	})
+}
+
+const p = reactive(new Set([1,2,3]))
+p.delete(1)
+console.log(p.size) // 3
+
+
+
+</script>
