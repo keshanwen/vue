@@ -57,6 +57,7 @@ function createRenderer(options) {
   function patchKeyedChildren(n1, n2, container) {
     const oldChildren = n1.children
     const newChildren = n2.children
+    
     let oldStartIdx = 0
     let oldEndIdx = oldChildren.length - 1
     let newStartIdx = 0
@@ -67,11 +68,13 @@ function createRenderer(options) {
     let newStartVNode = newChildren[newStartIdx]
     let newEndVNode = newChildren[newEndIdx]
 
-    while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+  
+    while(oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
       if (!oldStartVNode) {
-        oldStartVNode = oldChildren[++oldStartIdx]
+        oldStartVNode = oldChildren[++oldStartIdx] 
       } else if (!oldEndVNode) {
-        oldEndVNode = newChildren[--oldEndIdx]
+        // oldEndVNode = newChildren[--oldEndIdx] 
+        oldEndVNode = oldChildren[--oldEndIdx] 
       } else if (oldStartVNode.key === newStartVNode.key) {
         patch(oldStartVNode, newStartVNode, container)
         oldStartVNode = oldChildren[++oldStartIdx]
@@ -87,37 +90,24 @@ function createRenderer(options) {
         oldStartVNode = oldChildren[++oldStartIdx]
         newEndVNode = newChildren[--newEndIdx]
       } else if (oldEndVNode.key === newStartVNode.key) {
-        // 步骤四：oldEndVNode 和 newStartVNode 比对
         patch(oldEndVNode, newStartVNode, container)
         insert(oldEndVNode.el, container, oldStartVNode.el)
 
         oldEndVNode = oldChildren[--oldEndIdx]
         newStartVNode = newChildren[++newStartIdx]
       } else {
-        // 遍历旧 children，试图寻找与 newStartVNode 拥有相同 key 值的元素
-        const idxInOld = oldChildren.findIndex(
-          node => node.key === newStartVNode.key
-        )
+
+        const idxInOld = oldChildren.findIndex( node => node.key === newStartVNode.key )
         if (idxInOld > 0) {
           const vnodeToMove = oldChildren[idxInOld]
           patch(vnodeToMove, newStartVNode, container)
           insert(vnodeToMove.el, container, oldStartVNode.el)
           oldChildren[idxInOld] = undefined
-        } else {
-          patch(null, newStartVNode, container, oldStartVNode.el)
+          newStartVNode = newChildren[++newStartIdx]
+
         }
-
-        newStartVNode = newChildren[++newStartIdx]
       }
     }
-
-    if (oldEndIdx < oldStartIdx && newStartIdx <= newEndIdx) {
-      // 添加新节点
-      for (let i = newStartIdx; i <= newEndIdx; i++) {
-        patch(null, newChildren[i], container, oldStartVNode.el)
-      }
-    }
-
   }
 
   function patchElement(n1, n2) {
@@ -265,7 +255,8 @@ const VNode1 = {
   children: [
     { type: 'p', children: '1', key: 1 },
     { type: 'p', children: '2', key: 2 },
-    { type: 'p', children: '3', key: 3 }
+    { type: 'p', children: '3', key: 3 },
+    { type: 'p', children: '4', key: 4 }
   ]
 }
 renderer.render(VNode1, document.querySelector('#app'))
@@ -273,13 +264,12 @@ renderer.render(VNode1, document.querySelector('#app'))
 const VNode2 = {
   type: 'div',
   children: [
+    { type: 'p', children: '2', key: 2 }, // 带着疑问如果 type 不一样，怎么比较?
     { type: 'p', children: '4', key: 4 },
     { type: 'p', children: '1', key: 1 },
-    { type: 'p', children: '2', key: 2 },
     { type: 'p', children: '3', key: 3 }
   ]
 }
-
 
 setTimeout(() => {
   console.log('update')
