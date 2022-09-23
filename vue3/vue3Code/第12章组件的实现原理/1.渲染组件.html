@@ -1,0 +1,91 @@
+<div id="app"></div>
+
+
+<script>
+
+// 从用户角度看. Mycomponent 是一个组件，他的值是一个选项对象
+const Mycomponent = {
+  // 组件名称，可选
+  name: 'Mycomponent',
+
+  data () {
+    return {
+      foo: 1
+    }
+  },
+
+  // 组件的渲染函数，其返回值必须为虚拟DOM
+  render() {
+    // 返回虚拟DOM
+    return {
+      type: 'div',
+      children: '我是文本内容'
+    }  
+  }
+}
+
+
+// 从渲染器内部看，一个组件则是一个特殊类型的虚拟DOM节点
+const CompVnode = {
+  type: Mycomponent
+  // ....
+}
+
+// 调用渲染器来渲染组件
+renderer.render(CompVnode, document.querySelector('#app'))
+
+
+function mountComponent(vnode, container, anchor) {
+  // 通过vnode环取组件的选项对象，即vnode.type
+  const componentOptions = vnode.type
+
+  // 获取组件的渲染函数 render
+  const { render } = componentOptions
+  // 执行渲染函数，获取组件要渲染的内容，即 render 函数返回的虚拟DOM
+  const subTree = render()
+  // 最后调用 patch 函数来挂载组件所描述的内容，即 subTree
+  patch(null, subTree, container, anchor)
+}
+
+
+function patch(n1, n2, container, anchor) {
+  if (n1 && n2.type !== n1.type) {
+    unmount(n1)
+    n1 = null
+  } 
+
+  const { type } = n2
+
+  if (typeof type === 'string') {
+    //  作为普通元素处理
+  } else if (type === Text) {
+    // 作为文本节点处理
+  } else if (type === Fragment) {
+    // 作为片段处理
+  } else if (typeof type === 'object') {
+    // vnode.type 的值是选项对象，作为组件来处理
+    if (!n1) {
+      // 挂载组件
+      mountComponent(n2, container, anchor)
+    } else {
+      //  更新组件
+      patchComponent(n1, n2, anchor)
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</script>
