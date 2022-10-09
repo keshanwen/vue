@@ -28,7 +28,7 @@ function effect(fn) {
         activeEffect = effectFn
         fn()
     }
-    effectFn.deps = [] // activeEffect.deps用来存储所有与该副作用函数相关联的依赖集合
+    effectFn.deps = [] // activeEffect.deps用来存储所有与该副作用函数相关联的依赖集合(即所有相关key的依赖，副作用函数)
     effectFn()
 }
 
