@@ -109,6 +109,7 @@ function trigger(target, key) {
     })
 }
 
+
 effect(
     () => {
         console.log(obj.foo)
@@ -123,6 +124,7 @@ effect(
         },
     })
 
+// 注意不要将副作用函数的执行与赋值的操作弄混淆了。
 obj.foo++
 obj.foo++
 
