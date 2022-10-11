@@ -101,7 +101,7 @@ function trigger(target, key) {
     const effects = depsMap.get(key) // effectFn Set
     const effectToRun = new Set()
     effects && effects.forEach(effectFn => { // 增加守卫条件
-        if (effectFn !== activeEffect) { // trigger触发执行的副作用函数如果和当前正在执行的副作用函数一样，就不触发执行
+        if (effectFn !== activeEffect) { // trigger触发执行的副作用函数如果和当前正在执行的副作用函数一样，就不触发执行。不要将副作用函数的执行与改变值操作弄混淆了。它只是不触发副作用函数，但是不代表不改变值.
             effectToRun.add(effectFn)
         }
     })
