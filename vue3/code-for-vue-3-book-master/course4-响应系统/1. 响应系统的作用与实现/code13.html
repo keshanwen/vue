@@ -177,7 +177,7 @@ let finallyData
 watch(() => obj.foo, async (newVal, oldVal, onInvalidate) => {
   let valid = true
   onInvalidate(() => {
-    valid = false
+    valid = false // 注意这里的 valid 如果有多次的回调，那么这里的valid是当前会调里的变量，及时onInvalidate会在下一次job中执行.(理解为将上一次的valid设置为false,这里涉及到了闭包，有点烧脑)
   })
   const res = await fetch()
 
