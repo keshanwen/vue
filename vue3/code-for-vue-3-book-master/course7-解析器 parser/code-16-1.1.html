@@ -50,35 +50,35 @@ function parseChildren(context, ancestors) {
   const { mode } = context
 
   while(!isEnd(context, ancestors)) {
-    let node
+      let node
 
-    if (mode === TextModes.DATA || mode === TextModes.RCDATA) {
-      if (mode === TextModes.DATA && context.source[0] === '<') {
-        if (context.source[1] === '!') {
-          if (context.source.startsWith('<!--')) {
-            // 注释
-            node = parseComment(context)
-          } else if (context.source.startsWith('<![CDATA[')) {
-            // CDATA
-            node = parseCDATA(context, ancestors)
+      if (mode === TextModes.DATA || mode === TextModes.RCDATA) {
+          if (mode === TextModes.DATA && context.source[0] === '<') {
+              if (context.source[1] === '!') {
+                  if (context.source.startsWith('<!--')) {
+                    // 注释
+                    node = parseComment(context)
+                  } else if (context.source.startsWith('<![CDATA[')) {
+                    // CDATA
+                    node = parseCDATA(context, ancestors)
+                  }
+              } else if (context.source[1] === '/') {
+                  // 结束标签
+              } else if (/[a-z]/i.test(context.source[1])) {
+                  // 标签
+                  node = parseElement(context, ancestors)
+              }
+          } else if (context.source.startsWith('{{')) {
+            // 解析插值
+            node = parseInterpolation(context)
           }
-        } else if (context.source[1] === '/') {
-          // 结束标签
-        } else if (/[a-z]/i.test(context.source[1])) {
-          // 标签
-          node = parseElement(context, ancestors)
-        }
-      } else if (context.source.startsWith('{{')) {
-        // 解析插值
-        node = parseInterpolation(context)
       }
-    }
 
-    if (!node) {
-      node = parseText(context)
-    }
+      if (!node) {
+          node = parseText(context)
+      }
 
-    nodes.push(node)
+      nodes.push(node)
   }
 
   return nodes
