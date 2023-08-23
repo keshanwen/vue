@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="app">
+        <my-button :text="text" a=1></my-button>
+    </div>
+    <script src="../dist/vue.js"></script>
+    <script>
+        // 没有状态 ， 没有this ， 不用new ，没有生命周期
+        // 只负责做页面渲染 木偶组件 （内部不用在创造实例了）
+        Vue.component('my-button',{
+            functional:true, // 表示是函数式组件
+            props:{
+                text:String
+            },
+            render(h,{$slots,data,props}){
+                return h('button',props.text); // 每次用函数式组件的返回的虚拟节点直接进行渲染
+            }
+        })
+
+        // 如何调试？ createElm createComponent
+     
+        let vm = new Vue({
+            el:'#app',
+            data:{
+                text:'张三'
+            }
+        });
+
+        // createFunctionalComponent 直接返回一个虚拟节点，不用new 实例
+      
+    </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "@vue/runtime-dom",
+  "version": "1.0.0",
+  "main": "dist/runtime-dom.cjs.js", 
+  "module":"dist/runtime-dom.esm-bundler.js",
+  "license": "MIT",
+  "buildOptions":{ 
+    "name":"VueRuntimeDOM",  
+    "formats":[
+      "cjs",
+      "esm-bundler", 
+      "global"
+    ]
+  }
+}

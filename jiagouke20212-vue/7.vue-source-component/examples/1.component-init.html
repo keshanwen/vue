@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+
+    
+    <div id="app"></div>
+    <script src="../dist/vue.js"></script>
+    <script>
+
+        // Vue.component('App',{
+        //     render(h){
+        //         return h('h1',{class:'xxx'},'hello jw')
+        //     }
+        // })
+        let App = { // init 方法 回去调用_init -> 会进行App的初始化-> 会创建组件内容的虚拟节点
+            render(h){
+                return h('h1',{class:'xxx'},'hello jw')
+            }
+        }
+
+        const vm = new Vue({
+            el:'#app',
+            render: h =>{ // _c => h createElement  h = vm.$createElement 参数在vue里就是h (可以创造虚拟节点)
+               debugger;  // h()  创建一个空的虚拟节点
+               return h(App,{a:1,b:2,on:{click:function(){}}}); // h('div')  h('App') 
+            }
+        })
+
+        // 1.h(App) -> 会返回一个组件的虚拟节点
+        // 2.过程 会先将用户的参数 变成一个Ctor （Vue.extend）
+        // 3. 给组件的data上增加hook （init方法）
+        // 4.返回一个组件的虚拟节点 
+        // 5.创造真实节点  patch -> createElm  会调用组件的init方法进行初始化 -》vnode.componentInstance  = new Ctor()  
+        // 组件.$mount() -> vm.$el
+        // vnode.componentInstance.$el  取到的就是组件要渲染的内容
+        
+    </script>
+</body>
+</html>
+<!-- 
+{
+    tag:'vue-component-1-App',
+    componentOptions:{Ctor,propsData,listeners}
+}
+ -->

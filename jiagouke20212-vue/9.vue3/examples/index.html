@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script src="../node_modules/@vue/reactivity/dist/reactivity.global.js"></script>
+    <div id="app"></div>
+    <script>
+        const { reactive, readonly, shallowReadonly, shallowReactive, effect } = VueReactivity;
+        let obj = { name: 'zf', age: 12, address: { num: 504 }, arr: [1, 2, 3, 4] };
+        let r1 = reactive(obj)
+
+        // 如果写的是r1.arr  -> 只有r1.arr 的引用变化了 才会更新 r1.arr = 100
+        // r1.arr.length    r1.arr.push(6) 更新
+        // r1.arr[3]   r1.arr.push(6);  更新
+
+        // 数组想触发更新 但是你写的代码中没用到索引，所以更新的时候 ，因为此索引没有收集依赖，所以不会触发更新
+        effect(() => { // 只有用到的属性 才能依赖收集
+           console.log(r1.xxx)
+        }, {
+            scheduler(effect) {
+                console.log(effect)
+            }
+        })
+        setTimeout(() => {
+            r1.xxx =100;
+            // 调用push 会在数组中添加一项，并且直接将数组length + 1
+            // 之后再次触发set方法 拿到的老的length 已经是+1后的了 ， 值就不会发生变化了
+            // r1.arr.length =100 // 我们需要检测 当前改变的长度是否小于数组总长度，如果小于，要更新数组
+            // r1.arr.push(6); // 会给数组添加一项索引为4的 并且更改length属性
+        }, 1000);
+
+
+        // let r2 = readonly(obj)
+        // let r3 = shallowReactive(obj)
+        // let r4 = shallowReadonly(obj)
+        // console.log(r1.address,r2.address,r3.address,r4.address);
+
+        // r1.address.num = 100;// 取到adress，在给num赋值
+        // r2.name = 'jw'
+    </script>
+</body>
+
+</html> =

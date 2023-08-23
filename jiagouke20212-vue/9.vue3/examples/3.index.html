@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script src="../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script>
+    <div id="app"></div>
+    <script>
+        // 一个是dom平台下 ，一个是不依赖于平台 
+
+        const { createApp, h, reactive } = VueRuntimeDOM; // VueRuntimeCore
+        let App = {
+            setup() {
+                const state = reactive({ count: 0 })
+                const fn = () => {
+                    state.count++;
+                }
+                setTimeout(() => {
+                    state.count++;
+                    state.count++;
+                }, 1000);
+                return {
+                    state,
+                    fn
+                }
+            },
+            render(proxy) {
+                return h('div', { onclick: proxy.fn, style: { background: 'red' } }, [h('span', { style: { color: 'yellow' } }, proxy.state.count)])
+            }
+        }
+        let app = createApp(App, { a: 1 }); // rootProps
+
+        app.mount('#app')
+    </script>
+</body>
+
+</html>

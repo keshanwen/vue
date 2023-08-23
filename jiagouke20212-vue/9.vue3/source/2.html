@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <!-- 原生的vue3 -->
+    <div id="app"></div>
+    <script src="./node_modules/@vue/reactivity/dist/reactivity.global.js"></script>
+
+    <script>
+        const {reactive,effect,readonly,shallowReactive,shallowReadonly,ref,shallowRef,toRef,toRefs} = VueReactivity;
+        const r = reactive({name:'zf',age:12,address:'xxx'})
+        console.log(toRef(r,'name'))
+        // reactive 只能用于对象类型 来进行检测
+        console.log(reactive([]))
+
+
+        console.log(toRefs(r))
+        // 基本类型会采用一个api 此api叫 ref 可以实现普通类型的装包
+
+        // const val = shallowRef({}); // 一般用于 某一个具体的变量  definePrperty
+        // console.log(val.value)
+    </script>
+</body>
+</html>
+
+

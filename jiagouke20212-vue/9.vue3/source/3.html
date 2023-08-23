@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script src="./node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script>
+    <div id="app"></div>
+    <script>
+        // vue3 基于 runtime-dom (增加 compiler-dom)
+
+        let { createApp, h, reactive, getCurrentInstance } = VueRuntimeDOM; // VueRuntimeDOM -> VueRuntimeCore  -> VueReactivity
+        // tree-shaking  如果用户不使用h方法
+        // reactive computed ref
+
+        function useCounter() {
+            const state = reactive({ count: 0 });
+            // setup 方法如果返回的是一个对象 这个对象会作为最终渲染时所用的数据
+            const fn = function() {
+                state.count++;
+            }
+            return { state, fn };
+        }
+        let App = {
+            props: {
+                a: Number
+            },
+            setup(props, context) { // 启动方法， beforeCreate
+                let { state, fn } = useCounter();
+                
+                return {
+                    state,
+                    fn
+                }
+            },
+            // 如果用户写的是模板
+            render: (proxy) => { // render函数  
+                // 要么写模板  jsx 语法 -》 h()
+                // h(标签，属性)
+                // h(标签，{}，值)
+                // h(标签,值)
+                // h(标签,[值,值])  
+                // h(标签,null,值，值)
+                // jsx => 
+             
+                return h('div',null, h('span',{},'div'))
+            }
+        }
+        let app = createApp(App, { a: 1 }); //  createApp参数只能放组件
+        app.mount('#app');
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="app">
+       
+    </div>
+    <script src="../dist/vue.js"></script>
+    <script>
+        // 图片懒加载 先弄一个假的 之后用真的替换
+        // 先弄个占位符  加载完毕后重新渲染 , 会强制重新渲染，并且把组件保存到了 factory.resolved, 重新渲染时会拿到这个组件，做组件的正常挂载逻辑
+
+        Vue.component('async-component',(resolve,reject)=> new Promise((resolve,reject)=>{
+            setTimeout(() => {
+                resolve({
+                    template:'<div>hello world</div>'
+                })
+            }, 3000);
+        }))
+
+        new Vue({
+            el:'#app',
+            render(h){
+                debugger;
+                return h('async-component')
+            }
+        })
+      
+    </script>
+</body>
+</html>

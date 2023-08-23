@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <!-- 原生的vue3 -->
+    <div id="app"></div>
+    <script src="./node_modules/@vue/reactivity/dist/reactivity.global.js"></script>
+
+    <script>
+        const {reactive,effect,readonly,shallowReactive,shallowReadonly} = VueReactivity;
+
+        // vue2中的响应式是不能自己控制的 , vue3 给了一个api 可以自动转换响应式
+        let obj = { name: 'zf', age: 12, address: { num: 504 } };
+        
+        let r1 = reactive(obj)
+        // effect 默认数据更新了 会重新执行回调函数，如果自定义了scheduler 属性，可以实现更新时调用自定义的scheduler
+        effect(()=>{
+            app.innerHTML = r1.name
+        },{scheduler:(...args)=>{
+            // console.log('有变化',args)
+            args[0]()
+        }});
+
+        setTimeout(() => {
+            r1.name = 'jw'
+        }, 1000);
+
+        // let r2 = readonly(obj)
+        // let r3 = shallowReactive(obj)
+        // let r4 = shallowReadonly(obj)
+
+        // console.log(r1.address,r2.address,r3.address,r4.address)
+        // state4.name = 'zs'
+
+        //  树表格中的数据 
+
+        // 总结： 我们在给对象添加响应式的时候用的最常用的是reactive api 
+
+        // vue2 响应式原理 ，数据变化要重新执行watcher，更新视图. 观察者模式 “类”
+
+        // vue3 响应式使用的是proxy -> 数据更新了， 通知的effect “函数了”
+
+        // effect(()=>{ // 副作用函数,默认会先执行一次 ， 如果依赖的数据发生变化了 会再次执行
+        //     app.innerHTML = state.name + state.age;
+        // })
+
+        // setInterval(() => {
+        //     state.name = 'jw'
+        //     state.name = 'jw1'
+        // }, 1000);
+
+
+        // effect  api 是 /@vue/reactivity ， vue3 里面不能直接使用effect
+
+        // render函数来支持jsx
+
+    </script>
+</body>
+</html>

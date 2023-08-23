@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script src="../node_modules/@vue/reactivity/dist/reactivity.global.js"></script>
+    <div id="app"></div>
+    <script>
+        const { reactive, readonly, shallowReadonly, shallowReactive, effect ,ref,toRef,toRefs} = VueReactivity;
+        // shallowref用的比少
+
+        let r = ref(true);
+
+        let school = reactive({name:'zf',age:12})  
+        // ref 是基于普通类型 变成响应式 
+        // toRef 是把响应式中的属性进行转成成 某个变量的格式
+        // toRef 是把响应式的对象取出具体的属性也包成响应式
+
+
+        let name = ref('zf')
+        let age = ref(12)
+
+        // {{name}}   {{age}} 
+       console.log(toRefs(school))
+        // console.log(toRef(school,'age'))
+
+        effect(()=>{
+            console.log(r.value)
+        });
+
+
+        setTimeout(() => {
+            debugger;
+            r.value = false;
+        }, 1000);
+    </script>
+</body>
+
+</html> =

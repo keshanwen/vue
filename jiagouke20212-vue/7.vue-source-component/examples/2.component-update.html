@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="app">
+        <p>xxxx</p>
+        <my-button :text="text"></my-button>
+    </div>
+    <script src="../dist/vue.js"></script>
+    <script>
+        Vue.component('my-button',{
+            props:{ // vm._props.text = '李斯'
+                text:String
+            },
+            template:'<button>{{text}}</button>'
+        })
+        let vm = new Vue({
+            el:'#app',
+            data:{
+                text:'张三'
+            }
+        });
+        setTimeout(() => {
+            vm.text = '李四';
+        }, 1000);
+        // patch
+
+        // 组件更新会执行组件的prepatch
+        // 组件内部会拿到最新的属性，赋值到原有的vm._props属性上,但是vm._props 他是响应式的，所以页面就更新了
+    </script>
+</body>
+</html>
