@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id=app>{{message}}</div>
+    <script src="./vue.js"></script>
+    <script>
+        // vue 默认支持响应式数据变化  （双向绑定） 
+        // 1.双向绑定页面得需要能修改（表单 radio checbox input textarea） 数据变化可以影响视图显示
+        // 2.响应式数据变化 能监控到数据变化 并且更新视图 （单向的）
+
+        // vue 模式 并不是mvvm , vue默认只是做视图的  ， 渐进式 + 组件化 + vue-router + vuex + vue-cli
+        // 我要知道数据的变化是如何变化的 Object.defineProperty 将对象中原有的属性 更改成带有get和set的一个属性,这样当修改的时候 会触发 set方法 -》 更新视图 
+        let vm = new Vue({  
+            el:'#app',
+            data(){ // 数组也可以使用defineProperty 但是我们很少去采用 arr[858] = 199
+                // 如果数组也使用了defineProerty 还是可以实现修改索引触发更新的，但是这种操作概率低，所以源码中没有采用这种方式 
+                // 数组 修改索引不会导致视图更新，修改length也不会更新
+                // vue3中为了兼容proxy 内部对数组用的就是defineProperty
+                // 正常用户修改数组 无非采用数组的变异方法， push pop splice shift unsfhit reverse sort
+                return {message:'hello zf',arr:[1,2,3]}
+            }
+            // data:{
+            //     message:'hello zf'
+            // }
+        });
+
+        console.log(vm.message);
+    </script>
+</body>
+</html>

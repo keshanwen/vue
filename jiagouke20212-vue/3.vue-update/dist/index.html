@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id=app>
+        {{arr}}
+    </div>
+    <script src="./vue.js"></script>
+    <script>
+        // 一般常见的情况 给所有的组件，都增加一些生命周期
+
+        // vue中的生命周期时怎么实现的？ 钩子方法（回调）
+        Vue.mixin({
+            beforeCreate() {
+                console.log('全局的1')
+            }
+        })
+        Vue.mixin({
+            beforeCreate() {
+                console.log('全局的2')
+            }
+        })
+        let vm = new Vue({
+            el: "#app",
+            beforeCreate: [
+                function() { // 生命周期的合并 ，需要将2个生命周期进行合并操作
+                    console.log('局部的第一个') // A模块
+                },
+                function() { // 生命周期的合并 ，需要将2个生命周期进行合并操作
+                    console.log('局部的第二个') // B模块
+                }
+            ],
+            data() {
+                return { name: 'zf', age: 12, address: '霍营', arr: [] }
+            }
+        });
+        console.log(vm.$options)
+    </script>
+</body>
+
+</html>

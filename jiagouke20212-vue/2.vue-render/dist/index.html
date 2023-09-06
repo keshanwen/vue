@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id=app > 
+        <li>{{name}}</li>
+        <li>{{name}}</li>
+        <li>{{name}}</li>
+        <li>{{age}}</li>
+    </div>
+    <script src="./vue.js"></script>
+    <script>
+        let vm = new Vue({
+            el: "#app",
+            data() {
+                return {name:'zf',age:12,address:'霍营'}
+            }
+        });
+        // ---------------更新流程----------------
+
+        // 对象更新流程 
+        // 如果数据变化了 可以调用此方法就可以了 vm._update(vm._render());
+        vm.name = 'jw';
+        vm.name = 'zf';
+        vm.name = 'jw';
+
+
+
+
+
+        // ---------------初渲染------------------
+
+        // 1.默认会调用vue._init方法将用户的参数挂载到$options选项中  vm.$options
+        // 2.vue会根据用户的参数进行数据的初始化 props computed watch, 会获取到对象作为数据， 可以通过vm._data访问到用户的数据
+        // 3.对数据进行观测 对象 （递归使用的defineProperty） 、 数组  （方法的重写）  劫持到用户的操作，比如用户修改了数据 -》 更新视图  （性能问题）
+        // 4.将数据代理到vm对象上 vm.xx => vm._data.xx
+        // 5.判断用户是否传入了el 属性 ， 内部会调用$mount方法，此方法也可以用户自己调用
+        // 6.对模板的优先级处理 render / template / outerHTML;
+        // 7.将模板编译成函数 parserHTML 解析模板-> ast语法树， 解析语法树生成code （codegen） -> render函数
+        // 8.通过render方法 生成虚拟dom + 真实的数据 => 真实的dom
+        // 9.根据虚拟节点渲染成真实节点
+    </script>
+</body>
+
+</html>

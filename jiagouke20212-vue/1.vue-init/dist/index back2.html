@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id=app >{{message}} </div>
+    <script src="./vue.js"></script>
+    <script>
+        let vm = new Vue({
+            data() {
+                return { message: 'hello zf', arr: [{name:'zf'},{}] }
+            },
+        }).$mount('#app');
+        // 什么情况会更新 
+        // vm.message = { a: 200 };
+        // vm.message.b = 100; // vue2 无法劫持到不存在的属性，新增不存在的属性 不会更新视图
+
+
+        // vm.arr[0].name = 'jw'; // 走对象的修改逻辑
+        // vm.arr[1] = 100; // 如果操作的是数组的索引 那么不会更新 ， 不能通过更改数组长度和索引（无法监控的）
+        // 数组的7个方法都会触发更新 
+        vm.arr.push({a:100},{a:100},{a:100});
+        // vm.arr[2].a = 200;
+        console.log(vm.arr)
+    </script>
+</body>
+
+</html>
