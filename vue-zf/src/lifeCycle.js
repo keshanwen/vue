@@ -1,4 +1,5 @@
 import { patch } from "./vdom/patch"
+import Watcher from "./observe/watcher"
 
 
 export function mountComponent(vm) {
@@ -6,7 +7,12 @@ export function mountComponent(vm) {
     vm._update(vm._render())
   }
 
-  updateComponent()
+  // 每个组件都有一个 watcher, 我们把这个 watcher 称之为渲染 watcher
+  new Watcher(vm, updateComponent, () => {
+    console.log('后续增加更新钩子函数 update')
+  }, true)
+
+  // updateComponent()
 }
 
 export function lifeCycleMixin(Vue) {

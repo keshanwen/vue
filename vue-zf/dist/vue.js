@@ -246,6 +246,35 @@
 
     // 属性的查找：是先找自己身上的，找不到去原型上查找
 
+    let id$1 = 0;
+    /*
+      多对多的关系
+      dep.subs = [watcher]
+      watcher.deps = [dep]
+    */
+
+    class Dep {
+      constructor() {
+        // 要把 watcher 放到 dep 中
+        this.subs = [];
+        this.id = id$1++;
+      }
+      depend() {
+        // 要给watcher 也加一个标识 防止重复
+        // this.subs.push(Dep.target)
+        // 让 dep 记住这个 watcher ,watcher 还要记住 dep 相互的关系
+        Dep.target.addDep(this); // 在 watcher 中在条用 dep 的 addSub 方法
+      }
+
+      addSub(watcher) {
+        this.subs.push(watcher);
+      }
+      notify() {
+        this.subs.forEach(watcher => watcher.update());
+      }
+    }
+    Dep.target = null; // 这里我用了一个全局的变量 window.target 静态属性
+
     // 1.每个对象都有一个__proto__属性 它指向所属类的原型   fn.__proto__ = Function.prototype
     // 2.每个原型上都有一个constructor属性 指向 函数本身 Function.prototype.constrcutr = Function
     class Observer {
@@ -289,9 +318,15 @@
     function defineReactive(obj, key, value) {
       // vue2 慢的原因 主要在这个方法中
       observe(value); // 递归进行观测数据，不管有多少层 我都进行defineProperty
+
+      let dep = new Dep(); // 每个属性都增加了一个 dep 闭包
+
       Object.defineProperty(obj, key, {
         get() {
           // 后续会有很多逻辑
+          if (Dep.target) {
+            dep.depend();
+          }
           return value; // 闭包，次此value 会像上层的value进行查找
         },
 
@@ -301,9 +336,11 @@
           observe(newValue);
           console.log('修改');
           value = newValue;
+          dep.notify(); // 拿到当前的 dep 里面的 watcher 依次执行
         }
       });
     }
+
     function observe(value) {
       // 1.如果value不是对象，那么就不用观测了，说明写的有问题
       if (!isObject(value)) {
@@ -396,12 +433,55 @@
       }
     }
 
+    let id = 0;
+    class Watcher {
+      constructor(vm, fn, cb, options) {
+        this.vm = vm;
+        this.fn = fn;
+        this.cb = cb;
+        this.options = options;
+        this.id = id++;
+        this.depsId = new Set();
+        this.deps = [];
+        this.getter = fn; // fn 就是页面渲染逻辑
+        this.get(); // 表示上来后就做一次初始化
+      }
+
+      addDep(dep) {
+        let did = dep.id;
+        if (!this.depsId.has(did)) {
+          this.depsId.add(did);
+          this.deps.push(dep); // 做了保存 id 的功能 并且让 watcher 记住 dep
+          dep.addSub(this);
+        }
+      }
+      get() {
+        Dep.target = this; // Dep.target = watcher
+        this.getter(); // 页面的渲染的逻辑 vm.name / vm.age
+        Dep.target = null; // 渲染完毕后 就将标识清空了，只有在渲染的时候才会进行依赖收集
+      }
+
+      update() {
+        console.log('update');
+
+        // 可以做异步更新处理
+        this.get();
+      }
+    }
+
     function mountComponent(vm) {
       let updateComponent = () => {
         vm._update(vm._render());
       };
-      updateComponent();
+
+      // 每个组件都有一个 watcher, 我们把这个 watcher 称之为渲染 watcher
+      new Watcher(vm, updateComponent, () => {
+        console.log('后续增加更新钩子函数 update');
+      }, true);
+
+      // updateComponent()
     }
+
     function lifeCycleMixin(Vue) {
       Vue.prototype._update = function (vnode) {
         // 采用的是 先深度遍历 创建节点（遇到节点就创造节点，递归创建）
