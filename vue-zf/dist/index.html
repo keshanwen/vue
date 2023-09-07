@@ -9,7 +9,7 @@
 </head>
 
 <body>
-  <div id=app> aaa ({{name}}) bbb ({{age}}) ccc</div>
+  <div id=app>name: {{ name }}</div>
   <script src="./vue.js"></script>
   <script>
     let vm = new Vue({
@@ -31,10 +31,16 @@
     },2000) */
 
     setTimeout( () => {
-      vm.name = 'yaming'
-      vm.age = '11'
-      console.log('2s later~~~~~~~~~')
-    },2000)
+      vm.name = 'yaming1'
+      vm.name = 'yaming2'
+      vm.name = 'yaming3'
+      vm.name = 'yaming4'
+      vm.name = 'yaming5'
+      vm.name = 'yaming6'
+      vm.$nextTick( () => {
+        console.log('1s later~~~~~~~~~', vm.$el)
+      })
+    },1000)
   </script>
 </body>
 

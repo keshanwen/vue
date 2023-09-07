@@ -52,7 +52,7 @@ function defineReactive(obj,key,value){ // vue2 慢的原因 主要在这个方�
         set(newValue){  // 如果设置的是一个对象那么会再次进行劫持
             if(newValue === value) return
             observe(newValue);
-            console.log('修改')
+            // console.log('修改')
             value = newValue
             dep.notify() // 拿到当前的 dep 里面的 watcher 依次执行
         }

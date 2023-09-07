@@ -213,6 +213,20 @@
       return typeof val == 'object' && val !== null;
     }
     let isArray = Array.isArray;
+    let callbacks = [];
+    let waiting = false;
+    function flushCallbacks() {
+      callbacks.forEach(fn => fn());
+      callbacks = [];
+      waiting = false;
+    }
+    function nextTick(fn) {
+      callbacks.push(fn);
+      if (!waiting) {
+        Promise.resolve().then(flushCallbacks);
+        waiting = true;
+      }
+    }
 
     let oldArrayPrototype = Array.prototype; // 获取数组的老的原型方法
     let arrayMethods = Object.create(oldArrayPrototype); // 让arrayMethods 通过__proto__ 能获取到数组的方法
@@ -334,7 +348,7 @@
           // 如果设置的是一个对象那么会再次进行劫持
           if (newValue === value) return;
           observe(newValue);
-          console.log('修改');
+          // console.log('修改')
           value = newValue;
           dep.notify(); // 拿到当前的 dep 里面的 watcher 依次执行
         }
@@ -433,6 +447,28 @@
       }
     }
 
+    let queue = []; // 存放要更新的 watcher
+    let has = {};
+    function flushSchedulerQueue() {
+      // beforeUpadte
+      queue.forEach(watcher => watcher.run());
+      queue = [];
+      has = {};
+      pending = false;
+    }
+    let pending = false;
+    function queueWatcher(watcher) {
+      let id = watcher.id;
+      if (has[id] == null) {
+        has[id] = true;
+        queue.push(watcher);
+        if (!pending) {
+          nextTick(flushSchedulerQueue);
+          pending = true;
+        }
+      }
+    }
+
     let id = 0;
     class Watcher {
       constructor(vm, fn, cb, options) {
@@ -462,10 +498,16 @@
       }
 
       update() {
-        console.log('update');
-
+        // 每次更新数据都会同步调用这个 update 方法，可以将更新的逻辑缓存起来，等会同步更新数据的逻辑执行完毕后，依次调用（去重的逻辑）
+        console.log('缓存更新');
+        queueWatcher(this);
         // 可以做异步更新处理
-        this.get();
+        // this.get()
+      }
+
+      run() {
+        console.log('真正执行更新');
+        this.get(); // render()  取最新的 vm 上的数据
       }
     }
 
@@ -532,6 +574,7 @@
         // console.log(opts.render)
         mountComponent(vm);
       };
+      Vue.prototype.$nextTick = nextTick;
     }
 
     function createElement(vm, tag, data = {}, ...children) {
