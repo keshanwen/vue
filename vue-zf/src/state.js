@@ -1,11 +1,24 @@
 import { observe } from "./observe"; // rollup-plugin-node-resolve
-import { isFunction } from "./utils";
+import { isFunction, isArray } from "./utils";
+import Watcher from "./observe/watcher";
+
+export function stateMixin(Vue) {
+    Vue.prototype.$watch = function (key, handler, options = {}) {
+        options.user = true
+
+        new Watcher(this, key, handler, options)
+    }
+}
 
 export function initState(vm){
     const opts = vm.$options;
 
     if(opts.data){
         initData(vm);
+    }
+
+    if (opts.watch) {
+        initWatch(vm, opts.watch)
     }
 
 }
@@ -36,4 +49,23 @@ function initData(vm){
     for(let key in data){ // vm.message => vm._data.message
         proxy(vm,key,'_data');// 代理vm上的取值和设置值 和  vm._data 没关系了
     }
+}
+
+
+function initWatch(vm, watch) {
+    for (let key in watch) {
+        let handler = watch[key]
+
+        if (isArray(handler)) {
+            for (let i = 0; i < handler.length; i++) {
+                createWatcher(vm, key, handler[i])
+            }
+        } else {
+            createWatcher(vm, key, handler)
+        }
+    }
+}
+
+function createWatcher(vm, key, handler) {
+    return vm.$watch(key, handler)
 }
