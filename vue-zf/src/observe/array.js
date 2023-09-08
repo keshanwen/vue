@@ -29,7 +29,8 @@ methods.forEach(method => {
                 break;
         }
         // inserted[] 遍历数组 看一下它是否需要进行劫持
-        if(inserted) ob.observeArray(inserted)
+        if (inserted) ob.observeArray(inserted)
+        ob.dep.notify() // 触发页面更新流程
   }
 });
 

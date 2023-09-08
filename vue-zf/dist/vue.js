@@ -255,6 +255,7 @@
         }
         // inserted[] 遍历数组 看一下它是否需要进行劫持
         if (inserted) ob.observeArray(inserted);
+        ob.dep.notify(); // 触发页面更新流程
       };
     });
 
@@ -295,6 +296,9 @@
       constructor(value) {
         // 不让__ob__ 被遍历到
         // value.__ob__ = this; // 我给对象和数组添加一个自定义属性
+
+        // 如果给一个对象增加一个不存在的属性，我希望也能更新视图
+        this.dep = new Dep(); // 给对象和数组都增加dep 属性 {}.__ob__.ep  [].__ob__.dep
         Object.defineProperty(value, '__ob__', {
           value: this,
           enumerable: false // 标识这个属性不能被列举出来，不能被循环到
@@ -329,9 +333,21 @@
     // 2) 不要写数据的时候 层次过深， 尽量扁平化数据
     // 3) 不要频繁获取数据
     // 4) 如果数据不需要响应式 可以使用Object.freeze 冻结属性
+    function dependArray(value) {
+      // [[[]], {}] 让数组的引用类型都收集依赖
+      for (let i = 0; i < value.length; i++) {
+        let current = value[i];
+        current.__ob__ && current.__ob__.dep.depend();
+        if (Array.isArray(current)) {
+          dependArray(current);
+        }
+      }
+    }
     function defineReactive(obj, key, value) {
       // vue2 慢的原因 主要在这个方法中
-      observe(value); // 递归进行观测数据，不管有多少层 我都进行defineProperty
+      let childOb = observe(value); // 递归进行观测数据，不管有多少层 我都进行defineProperty
+
+      // chilOb 如果有值 那么就是数组 或者对象
 
       let dep = new Dep(); // 每个属性都增加了一个 dep 闭包
 
@@ -340,7 +356,16 @@
           // 后续会有很多逻辑
           if (Dep.target) {
             dep.depend();
+            if (childOb) {
+              // 去属性的时候 会对对应的值（对象本身和数组）进行依赖收集
+              childOb.dep.depend(); // 让数组和对象也记住当前的 watcher
+              if (isArray(value)) {
+                // 可能是数组套数组的功能
+                dependArray(value);
+              }
+            }
           }
+          console.log(key, 'get');
           return value; // 闭包，次此value 会像上层的value进行查找
         },
 
@@ -348,7 +373,7 @@
           // 如果设置的是一个对象那么会再次进行劫持
           if (newValue === value) return;
           observe(newValue);
-          // console.log('修改')
+          console.log('修改');
           value = newValue;
           dep.notify(); // 拿到当前的 dep 里面的 watcher 依次执行
         }
@@ -361,7 +386,7 @@
         return;
       }
       if (value.__ob__) {
-        return; // 一个对象不需要重新被观测
+        return value.__ob__; // 一个对象不需要重新被观测
       }
       // 需要对对象进行观测 （最外层必须是一个{} 不能是数组）
 

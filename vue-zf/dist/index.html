@@ -9,18 +9,27 @@
 </head>
 
 <body>
-  <div id=app>name: {{ name }}</div>
+  <div id=app>{{ arr }}</div>
   <script src="./vue.js"></script>
   <script>
     let vm = new Vue({
       el: "#app",
       data() {
         return {
-          name: 'kebi',
-          age: 8
+         arr: [
+          {id: 0},
+          {id: 1},
+          [0,1,2]
+         ]
         }
       }
     })
+
+
+    setTimeout( () => {
+      vm.arr.push({id: 2})
+      console.log('setTimeout~~~~')
+    }, 1000)
 
     // 手动更新数据，更新视图
    /*  setTimeout( () => {
@@ -30,7 +39,7 @@
       console.log('2s 过后~~~~~~~~~', vm)
     },2000) */
 
-    setTimeout( () => {
+  /*   setTimeout( () => {
       vm.name = 'yaming1'
       vm.name = 'yaming2'
       vm.name = 'yaming3'
@@ -40,7 +49,7 @@
       vm.$nextTick( () => {
         console.log('1s later~~~~~~~~~', vm.$el)
       })
-    },1000)
+    },1000) */
   </script>
 </body>
 
