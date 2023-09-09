@@ -1,3 +1,4 @@
+
 let id = 0
 /*
   多对多的关系
@@ -14,7 +15,9 @@ class Dep {
     // 要给watcher 也加一个标识 防止重复
     // this.subs.push(Dep.target)
     // 让 dep 记住这个 watcher ,watcher 还要记住 dep 相互的关系
-    Dep.target.addDep(this) // 在 watcher 中在条用 dep 的 addSub 方法
+    if (Dep.target) {
+      Dep.target.addDep(this) // 在 watcher 中在条用 dep 的 addSub 方法
+    }
   }
   addSub(watcher) {
     this.subs.push(watcher)
@@ -25,5 +28,18 @@ class Dep {
 }
 
 Dep.target = null // 这里我用了一个全局的变量 window.target 静态属性
+
+let stack = []
+
+export function pushTarget(watcher) {
+  Dep.target = watcher
+  stack.push(watcher)
+  console.log(stack)
+}
+
+export function popTarget() {
+  stack.pop()
+  Dep.target = stack[stack.length - 1]
+}
 
 export default Dep;

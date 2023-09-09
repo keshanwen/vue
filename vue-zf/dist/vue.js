@@ -278,7 +278,9 @@
         // 要给watcher 也加一个标识 防止重复
         // this.subs.push(Dep.target)
         // 让 dep 记住这个 watcher ,watcher 还要记住 dep 相互的关系
-        Dep.target.addDep(this); // 在 watcher 中在条用 dep 的 addSub 方法
+        if (Dep.target) {
+          Dep.target.addDep(this); // 在 watcher 中在条用 dep 的 addSub 方法
+        }
       }
 
       addSub(watcher) {
@@ -289,6 +291,17 @@
       }
     }
     Dep.target = null; // 这里我用了一个全局的变量 window.target 静态属性
+
+    let stack = [];
+    function pushTarget(watcher) {
+      Dep.target = watcher;
+      stack.push(watcher);
+      console.log(stack);
+    }
+    function popTarget() {
+      stack.pop();
+      Dep.target = stack[stack.length - 1];
+    }
 
     // 1.每个对象都有一个__proto__属性 它指向所属类的原型   fn.__proto__ = Function.prototype
     // 2.每个原型上都有一个constructor属性 指向 函数本身 Function.prototype.constrcutr = Function
@@ -424,6 +437,7 @@
         this.cb = cb;
         this.user = !!options.user; // 是不是用户watcher
         this.lazy = !!options.lazy;
+        this.dirty = options.lazy; // 如果是计算属性，那么默认值lazy: true dirty: true
         this.options = options;
         this.id = id++;
         this.depsId = new Set();
@@ -456,16 +470,22 @@
         }
       }
       get() {
-        Dep.target = this; // Dep.target = watcher
+        // Dep.target = this // Dep.target = watcher
+        pushTarget(this);
         const value = this.getter.call(this.vm);
         // this.getter() // 页面的渲染的逻辑 vm.name / vm.age render() 方法会去 vm 上取值 vm._update(vm._render)
-        Dep.target = null; // 渲染完毕后 就将标识清空了，只有在渲染的时候才会进行依赖收集
+        // Dep.target = null // 渲染完毕后 就将标识清空了，只有在渲染的时候才会进行依赖收集
+        popTarget();
         return value;
       }
       update() {
         // 每次更新数据都会同步调用这个 update 方法，可以将更新的逻辑缓存起来，等会同步更新数据的逻辑执行完毕后，依次调用（去重的逻辑）
         console.log('缓存更新');
-        queueWatcher(this);
+        if (this.lazy) {
+          this.dirty = true;
+        } else {
+          queueWatcher(this); // 多次调用 update 希望将watcher 缓存起来，等下一会一起更新
+        }
         // 可以做异步更新处理
         // this.get()
       }
@@ -480,6 +500,17 @@
           this.cb.call(this.vm, newValue, oldValue);
         }
       }
+      evaluate() {
+        this.dirty = false; // 为 fasle 表示已经取过值了
+        this.value = this.get(); // 用户的 getter 执行
+      }
+
+      depend() {
+        let i = this.deps.length;
+        while (i--) {
+          this.deps[i].depend(); // lastName firstName 收集渲染 watcher
+        }
+      }
     }
 
     function stateMixin(Vue) {
@@ -492,6 +523,9 @@
       const opts = vm.$options;
       if (opts.data) {
         initData(vm);
+      }
+      if (opts.computed) {
+        initComputed(vm, opts.computed);
       }
       if (opts.watch) {
         initWatch(vm, opts.watch);
@@ -544,6 +578,54 @@
     }
     function createWatcher(vm, key, handler) {
       return vm.$watch(key, handler);
+    }
+    function initComputed(vm, computed) {
+      const watchers = vm._computedWatchers = {};
+      for (let key in computed) {
+        const userDef = computed[key];
+        // 依赖的属性变化就重新取值 get
+        let getter = typeof userDef === 'function' ? userDef : userDef.get;
+
+        // 计算属性本质就是 watcher
+        // 将 watcher 和属性 做一个映射
+        watchers[key] = new Watcher(vm, getter, () => {}, {
+          lazy: true // 默认不执行
+        });
+
+        // 将 key 定义在 vm 上
+        defineComputed(vm, key, userDef);
+      }
+    }
+    function createComputedGetter(key) {
+      return function computedGetter() {
+        // 取计算属性 走的是这个函数
+        // this._computedWatchers 包含着所有的计算属性
+        // 通过 key 可以拿到对应的watcher, 这个watcher 中包含了 getter
+        let watcher = this._computedWatchers[key];
+
+        // 脏就是 要调用用户的 getter 不脏就是不要调用 getter
+        if (watcher.dirty) {
+          watcher.evaluate();
+        }
+
+        // 如果当前取完值后 Dep.target 还有值 需要继续向上收集
+        if (Dep.target) {
+          // 计算属性 watcher 内部有两个dep, firsteName lastName
+          watcher.depend(); // watcher 里对应了 多个dep
+        }
+
+        return watcher.value;
+      };
+    }
+    function defineComputed(vm, key, userDef) {
+      let sharedProperty = {};
+      if (typeof userDef === 'function') {
+        sharedProperty.get = userDef;
+      } else {
+        sharedProperty.get = createComputedGetter(key);
+        sharedProperty.set = userDef.set;
+      }
+      Object.defineProperty(vm, key, sharedProperty); // computed 就是一个 defineProperty
     }
 
     function patch(el, vnode) {

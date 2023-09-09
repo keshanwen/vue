@@ -15,7 +15,7 @@
 <!-- Dep.target上赋值一个渲染watcher ， 又将Dep.target设置为计算属性watcher-->
 
 <body>
-  <div id="app"></div>
+  <div id="app">{{ fullName }}</div>
   <!-- <script src="node_modules/vue/dist/vue.js"></script> -->
   <script src="./vue.js"></script>
   <script>
@@ -29,40 +29,40 @@
         firstName: 'zhu',
         lastName: 'feng'
       },
-      // computed: { // Object.defineProperty => getter
-      //   fullName: {
-      //     get() {
-      //       console.log('oooo')
-      //       return this.firstName + this.lastName
-      //     },
-      //     set(newValue) {
-      //       console.log(newValue);
-      //     }
-      //   }
-      // },
-      watch: { // 用户watcher
-        // name(newVal, oldVal) {
-        //     console.log(newVal, oldVal, 'watcher~~~~~~~~~~~~~~~~~~~~~~')
-        // },
-        name: [
-            function(newVal, oldVal) {
-                console.log(newVal, oldVal, 'watcher~~~~~~~~~~')
-            },
-            function(a, b) {
-                console.log(a, b, 'watcher~~~~~~~~~')
-            }
-        ],
-        'age.n'(newVal, oldVal) {
-            console.log(newVal, oldVal, 'watcher~~~~~')
-        },
-      }
+      computed: { // Object.defineProperty => getter
+        fullName: {
+          get() {
+            console.log('oooo')
+            return this.firstName + this.lastName
+          },
+          set(newValue) {
+            console.log(newValue);
+          }
+        }
+      },
+      // watch: { // 用户watcher
+      //   // name(newVal, oldVal) {
+      //   //     console.log(newVal, oldVal, 'watcher~~~~~~~~~~~~~~~~~~~~~~')
+      //   // },
+      //   name: [
+      //       function(newVal, oldVal) {
+      //           console.log(newVal, oldVal, 'watcher~~~~~~~~~~')
+      //       },
+      //       function(a, b) {
+      //           console.log(a, b, 'watcher~~~~~~~~~')
+      //       }
+      //   ],
+      //   'age.n'(newVal, oldVal) {
+      //       console.log(newVal, oldVal, 'watcher~~~~~')
+      //   },
+      // }
     });
 
-    setTimeout( () => {
-    // vm.name = 'kebi'
-    vm.age.n = 'n~~~~~'
-    console.log('setTimeout~~~~')
-    },1000)
+    // setTimeout( () => {
+    // // vm.name = 'kebi'
+    // vm.age.n = 'n~~~~~'
+    // console.log('setTimeout~~~~')
+    // },1000)
 
 
     // console.log(vm.fullName)
@@ -102,3 +102,25 @@
 </body>
 
 </html>
+
+<!--
+
+  在页面 html 上 展示计算属性 {{ fullName }}   ====> 分析流程。先分析只依赖一个 firstName 属性（data 中的属性）
+
+  生成渲染 watcher Dep.traget = 渲染 wathcer stack [渲染watcher] => 执行 render 函数 => 在页面上获取计算属性 fullName, (每个计算属性 也有 wathcer, 初始computed 的是生成的，的是它默认不执行getter) =>
+
+  fullName 的get 函数执行， Dep.target = fullName watcher, 此时 stask [渲染 watcher ,fullName watcher] => 又因为 fullName 的get 函数执行，在get 中依赖了 firstName 属性（data 中的属性）
+
+  => 获取 firstName 这个时候，会将 fullName watcher 收集起来，因为firstName 是在 data 中定义的，会有 dep , firstName 的dep [fullName watcher] (注意，这里是双向的， dep 收集了 watcher, watcher 也记住了dep) =>
+
+  当 fullName 的 get 执行完毕后，在stack 中弹出 fullName watcher, Dep.tragt = 渲染 watcher ,stack [渲染 watcher] => 在计算属性的get 中，会有一个继续向上收集操作（如果Dep.target 还有）,此时计算属性收集的 dep 会继续向上收集 watcher (firstName 收集了渲染 watcher)
+
+  firstName  [计算属性 watcher, 渲染 Watcher]
+
+
+
+
+  问题一： 这个计算属性 fullName 会将渲染watcher 收集起来吗？
+          不会，因为这个计算属性 fullName 不会产生 dep ，所以不会将 渲染 watcher 收集起来 （只有 data 中的数据，才会产生 dep, 收集渲染watcher）
+
+ -->

@@ -1,5 +1,6 @@
 import Dep from "./dep"
 import { queueWatcher } from "./scheduler"
+import { popTarget, pushTarget } from "./dep"
 
 let id = 0;
 class Watcher {
@@ -9,6 +10,7 @@ class Watcher {
     this.cb = cb
     this.user = !!options.user // 是不是用户watcher
     this.lazy = !!options.lazy
+    this.dirty = options.lazy // 如果是计算属性，那么默认值lazy: true dirty: true
     this.options = options
     this.id = id++
     this.depsId = new Set()
@@ -42,17 +44,23 @@ class Watcher {
     }
   }
   get() {
-    Dep.target = this // Dep.target = watcher
+    // Dep.target = this // Dep.target = watcher
+    pushTarget(this)
     const value = this.getter.call(this.vm)
     // this.getter() // 页面的渲染的逻辑 vm.name / vm.age render() 方法会去 vm 上取值 vm._update(vm._render)
-    Dep.target = null // 渲染完毕后 就将标识清空了，只有在渲染的时候才会进行依赖收集
+    // Dep.target = null // 渲染完毕后 就将标识清空了，只有在渲染的时候才会进行依赖收集
+    popTarget()
     return value
   }
   update() {
     // 每次更新数据都会同步调用这个 update 方法，可以将更新的逻辑缓存起来，等会同步更新数据的逻辑执行完毕后，依次调用（去重的逻辑）
     console.log('缓存更新')
 
-    queueWatcher(this)
+    if (this.lazy) {
+      this.dirty = true
+    } else {
+      queueWatcher(this) // 多次调用 update 希望将watcher 缓存起来，等下一会一起更新
+    }
     // 可以做异步更新处理
     // this.get()
   }
@@ -66,6 +74,25 @@ class Watcher {
       this.cb.call(this.vm, newValue, oldValue)
     }
   }
+  evaluate() {
+    this.dirty = false // 为 fasle 表示已经取过值了
+    this.value = this.get() // 用户的 getter 执行
+  }
+  depend() {
+    let i = this.deps.length
+    while (i--) {
+      this.deps[i].depend() // lastName firstName 收集渲染 watcher
+    }
+  }
 }
+
+// watcher 和 dep
+// 我们将更新的功能封装了一个 watcher
+// 渲染页面前， 会将当前 watcher 放到Dep 类上
+// 在 vue 中页面渲染时使用的属性，需要进行依赖收集， 收集对象的渲染watcher
+// 取值时， 给每个属性都加了 dep 属性， 用于存储这个 渲染 watcher （同一个watcher 会对应多个dep）
+// 每个属性可能对应多个视图 （多个视图肯定是多个 watcher） 一个属性要对应多个watcher
+// dep.depend() => 通知dep 存放watcher => Dep.target.addDep()  => 通知watcher 存放dep
+// 双向存储
 
 export default Watcher

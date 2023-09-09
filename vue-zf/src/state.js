@@ -1,6 +1,7 @@
 import { observe } from "./observe"; // rollup-plugin-node-resolve
 import { isFunction, isArray } from "./utils";
 import Watcher from "./observe/watcher";
+import Dep from "./observe/dep";
 
 export function stateMixin(Vue) {
     Vue.prototype.$watch = function (key, handler, options = {}) {
@@ -15,6 +16,10 @@ export function initState(vm){
 
     if(opts.data){
         initData(vm);
+    }
+
+    if (opts.computed) {
+        initComputed(vm, opts.computed)
     }
 
     if (opts.watch) {
@@ -68,4 +73,54 @@ function initWatch(vm, watch) {
 
 function createWatcher(vm, key, handler) {
     return vm.$watch(key, handler)
+}
+
+function initComputed(vm, computed) {
+    const watchers = vm._computedWatchers = {}
+    for (let key in computed) {
+        const userDef = computed[key]
+        // 依赖的属性变化就重新取值 get
+        let getter = typeof userDef === 'function' ? userDef : userDef.get
+
+        // 计算属性本质就是 watcher
+        // 将 watcher 和属性 做一个映射
+        watchers[key] = new Watcher(vm, getter, () => { }, {
+            lazy: true  // 默认不执行
+        })
+
+        // 将 key 定义在 vm 上
+        defineComputed(vm, key, userDef)
+    }
+}
+
+function createComputedGetter(key) {
+    return function computedGetter() { // 取计算属性 走的是这个函数
+        // this._computedWatchers 包含着所有的计算属性
+        // 通过 key 可以拿到对应的watcher, 这个watcher 中包含了 getter
+        let watcher = this._computedWatchers[key]
+
+        // 脏就是 要调用用户的 getter 不脏就是不要调用 getter
+        if (watcher.dirty) {
+            watcher.evaluate()
+        }
+
+        // 如果当前取完值后 Dep.target 还有值 需要继续向上收集
+        if (Dep.target) {
+            // 计算属性 watcher 内部有两个dep, firsteName lastName
+            watcher.depend() // watcher 里对应了 多个dep
+        }
+
+        return watcher.value
+    }
+}
+
+function defineComputed(vm, key, userDef) {
+    let sharedProperty = {}
+    if (typeof userDef === 'function') {
+        sharedProperty.get = userDef
+    } else {
+        sharedProperty.get = createComputedGetter(key)
+        sharedProperty.set = userDef.set
+    }
+    Object.defineProperty(vm, key, sharedProperty) // computed 就是一个 defineProperty
 }
