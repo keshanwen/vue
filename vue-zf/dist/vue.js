@@ -220,12 +220,59 @@
       callbacks = [];
       waiting = false;
     }
+
+    // 微任务是在页面渲染前执行 我取的是内存中的dom, 不关心你渲染完毕没有
     function nextTick(fn) {
       callbacks.push(fn);
       if (!waiting) {
         Promise.resolve().then(flushCallbacks);
         waiting = true;
       }
+    }
+    let lifeCycleHooks = ['beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'beforeDestroy', 'destroyed'];
+    let strats = {};
+    function mergeHook(parentVal, childVal) {
+      if (childVal) {
+        if (parentVal) {
+          return parentVal.concat(childVal);
+        } else {
+          return [childVal];
+        }
+      } else {
+        return parentVal;
+      }
+    }
+    lifeCycleHooks.forEach(hook => {
+      strats[hook] = mergeHook;
+    });
+    function mergeOptions(parent, child) {
+      const options = {};
+      for (let key in parent) {
+        mergeField(key);
+      }
+      for (let key in child) {
+        if (parent.hasOwnProperty(key)) {
+          continue;
+        }
+        mergeField(key);
+      }
+      function mergeField(key) {
+        const parentVal = parent[key];
+        const childVal = child[key];
+        if (strats[key]) {
+          options[key] = strats[key](parentVal, childVal);
+        } else {
+          if (isObject(parentVal) && isObject(childVal)) {
+            options[key] = {
+              ...parentVal,
+              ...childVal
+            };
+          } else {
+            options[key] = child[key] || parent[key];
+          }
+        }
+      }
+      return options;
     }
 
     let oldArrayPrototype = Array.prototype; // 获取数组的老的原型方法
@@ -686,6 +733,15 @@
         const vm = this;
         vm.$el = patch(vm.$el, vnode);
       };
+      Vue.prototype.$nextTick = nextTick;
+    }
+    function callHook(vm, hook) {
+      let handlers = vm.$options[hook];
+      if (handlers) {
+        for (let i = 0; i < handlers.length; i++) {
+          handlers[i].call(vm);
+        }
+      }
     }
 
     function initMixin(Vue) {
@@ -693,10 +749,12 @@
       Vue.prototype._init = function (options) {
         const vm = this;
         // 把用户的选项放到 vm上，这样在其他方法中都可以获取到options 了
-        vm.$options = options; // 为了后续扩展的方法 都可以获取$options选项
+        vm.$options = mergeOptions(vm.constructor.options, options); // 为了后续扩展的方法 都可以获取$options选项
 
+        callHook(vm, 'beforeCreate');
         // options中是用户传入的数据 el , data
         initState(vm);
+        callHook(vm, 'created');
         if (vm.$options.el) {
           // 要将数据挂载到页面上
           // 现在数据已经被劫持了， 数据变化需要更新视图 diff算法更新需要更新的部分
@@ -730,7 +788,6 @@
         // console.log(opts.render)
         mountComponent(vm);
       };
-      Vue.prototype.$nextTick = nextTick;
     }
 
     function createElement(vm, tag, data = {}, ...children) {
@@ -777,6 +834,16 @@
       };
     }
 
+    function initGlobalApi(Vue) {
+      Vue.options = {}; // 用来存放全局的配置 , 每个组件初始化的时候都会和options选项进行合并
+
+      Vue.mixin = function (options) {
+        this.options = mergeOptions(this.options, options);
+        return this;
+      };
+      Vue.options._base = Vue; // 无论后续创建多少个子类 都可以通过_base 找到 Vue
+    }
+
     // vue 要如何实现，原型模式，所有的功能都通过原型扩展的方式来添加
     function Vue(options) {
       this._init(options); // 实现vue的初始化功能
@@ -786,6 +853,7 @@
     renderMixin(Vue);
     lifeCycleMixin(Vue);
     stateMixin(Vue);
+    initGlobalApi(Vue);
 
     // 1.new Vue 会调用_init方法进行初始化操作
     // 2.会将用户的选项放到 vm.$options上

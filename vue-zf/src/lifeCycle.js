@@ -1,5 +1,6 @@
 import { patch } from "./vdom/patch"
 import Watcher from "./observe/watcher"
+import { nextTick } from "./utils"
 
 
 export function mountComponent(vm) {
@@ -21,4 +22,15 @@ export function lifeCycleMixin(Vue) {
     const vm = this
     vm.$el = patch(vm.$el, vnode)
   }
+
+  Vue.prototype.$nextTick = nextTick
+}
+
+export function callHook(vm,hook){
+    let handlers = vm.$options[hook];
+    if(handlers){
+        for(let i =0; i < handlers.length;i++){
+            handlers[i].call(vm)
+        }
+    }
 }
