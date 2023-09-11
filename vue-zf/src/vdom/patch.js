@@ -1,34 +1,56 @@
-export function patch(el, vnode) {
 
-    // 删除老节点 根据vnode创建新节点，替换掉老节点
-    const elm = createElm(vnode); // 根据虚拟节点创造了真实节点
-    const parentNode = el.parentNode;
-    parentNode.insertBefore(elm, el.nextSibling); // el.nextSibling 不存在就是null 如果为null insertBefore就是appendChild
-    parentNode.removeChild(el);
 
-    return elm; // 返回最新节点
+export function patch(oldVnode, vnode) {
+
+    if(!oldVnode){
+        return createElm(vnode); // 如果没有el元素，那就直接根据虚拟节点返回真实节点
+    }
+
+
+
+    if (oldVnode.nodeType == 1) {
+        // 用vnode  来生成真实dom 替换原本的dom元素
+        const parentElm = oldVnode.parentNode; // 找到他的父亲
+        let elm = createElm(vnode); //根据虚拟节点 创建元素
+
+        // 在第一次渲染后 是删除掉节点，下次在使用无法获取
+        parentElm.insertBefore(elm, oldVnode.nextSibling);
+
+        parentElm.removeChild(oldVnode)
+
+
+        return elm
+    }
+}
+// 创建真实节点的
+
+function createComponent(vnode) {
+    let i = vnode.data; //  vnode.data.hook.init
+    if ((i = i.hook) && (i = i.init)) {
+        i(vnode); // 调用init方法
+    }
+    if(vnode.componentInstance){ // 有属性说明子组件new完毕了，并且组件对应的真实DOM挂载到了componentInstance.$el
+        return true;
+    }
+
 }
 
-// 面试有问 虚拟节点的实现 -》 如何将虚拟节点渲染成真实节点
 function createElm(vnode) {
-    let { tag, data, children, text, vm } = vnode;
-    // 我们让虚拟节点和真实节点做一个映射关系, 后续某个虚拟节点更新了 我可以跟踪到真实节点，并且更新真实节点
+    let { tag, data, children, text, vm } = vnode
+    if (typeof tag === 'string') { // 元素
+        if (createComponent(vnode)) {
+            // 返回组件对应的真实节点
+            return vnode.componentInstance.$el;
+        }
 
-    if (typeof tag === 'string') {
-        vnode.el = document.createElement(tag);
-        // 如果有data属性，我们需要把data设置到元素上
-        updateProperties(vnode.el, data);
+        vnode.el = document.createElement(tag); // 虚拟节点会有一个el属性 对应真实节点
         children.forEach(child => {
             vnode.el.appendChild(createElm(child))
-        })
+        });
+
+
     } else {
         vnode.el = document.createTextNode(text);
     }
     return vnode.el
-}
-
-function updateProperties(el, props = {}) { // 后续写diff算法的时候 在进行完善, 没有考虑样式等
-    for (let key in props) {
-        el.setAttribute(key, props[key]);
-    }
 }

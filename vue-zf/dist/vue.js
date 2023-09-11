@@ -245,6 +245,16 @@
     lifeCycleHooks.forEach(hook => {
       strats[hook] = mergeHook;
     });
+    strats.components = function (parentVal, childVal) {
+      // Vue.options.components
+      let options = Object.create(parentVal); // 根据父对象构造一个新对象 options._proto_ = parentVal
+      if (childVal) {
+        for (let key in childVal) {
+          options[key] = childVal[key];
+        }
+      }
+      return options;
+    };
     function mergeOptions(parent, child) {
       const options = {};
       for (let key in parent) {
@@ -273,6 +283,10 @@
         }
       }
       return options;
+    }
+    function isReservedTag(str) {
+      let reservedTag = 'a,div,span,p,img,button,ul,li';
+      return reservedTag.includes(str);
     }
 
     let oldArrayPrototype = Array.prototype; // 获取数组的老的原型方法
@@ -562,7 +576,8 @@
 
     function stateMixin(Vue) {
       Vue.prototype.$watch = function (key, handler, options = {}) {
-        options.user = true;
+        options.user = true; // 是一个用户自己写 的 watcher
+
         new Watcher(this, key, handler, options);
       };
     }
@@ -675,16 +690,35 @@
       Object.defineProperty(vm, key, sharedProperty); // computed 就是一个 defineProperty
     }
 
-    function patch(el, vnode) {
-      // 删除老节点 根据vnode创建新节点，替换掉老节点
-      const elm = createElm(vnode); // 根据虚拟节点创造了真实节点
-      const parentNode = el.parentNode;
-      parentNode.insertBefore(elm, el.nextSibling); // el.nextSibling 不存在就是null 如果为null insertBefore就是appendChild
-      parentNode.removeChild(el);
-      return elm; // 返回最新节点
-    }
+    function patch(oldVnode, vnode) {
+      if (!oldVnode) {
+        return createElm(vnode); // 如果没有el元素，那就直接根据虚拟节点返回真实节点
+      }
 
-    // 面试有问 虚拟节点的实现 -》 如何将虚拟节点渲染成真实节点
+      if (oldVnode.nodeType == 1) {
+        // 用vnode  来生成真实dom 替换原本的dom元素
+        const parentElm = oldVnode.parentNode; // 找到他的父亲
+        let elm = createElm(vnode); //根据虚拟节点 创建元素
+
+        // 在第一次渲染后 是删除掉节点，下次在使用无法获取
+        parentElm.insertBefore(elm, oldVnode.nextSibling);
+        parentElm.removeChild(oldVnode);
+        return elm;
+      }
+    }
+    // 创建真实节点的
+
+    function createComponent$1(vnode) {
+      let i = vnode.data; //  vnode.data.hook.init
+      if ((i = i.hook) && (i = i.init)) {
+        i(vnode); // 调用init方法
+      }
+
+      if (vnode.componentInstance) {
+        // 有属性说明子组件new完毕了，并且组件对应的真实DOM挂载到了componentInstance.$el
+        return true;
+      }
+    }
     function createElm(vnode) {
       let {
         tag,
@@ -693,12 +727,13 @@
         text,
         vm
       } = vnode;
-      // 我们让虚拟节点和真实节点做一个映射关系, 后续某个虚拟节点更新了 我可以跟踪到真实节点，并且更新真实节点
-
       if (typeof tag === 'string') {
-        vnode.el = document.createElement(tag);
-        // 如果有data属性，我们需要把data设置到元素上
-        updateProperties(vnode.el, data);
+        // 元素
+        if (createComponent$1(vnode)) {
+          // 返回组件对应的真实节点
+          return vnode.componentInstance.$el;
+        }
+        vnode.el = document.createElement(tag); // 虚拟节点会有一个el属性 对应真实节点
         children.forEach(child => {
           vnode.el.appendChild(createElm(child));
         });
@@ -707,28 +742,24 @@
       }
       return vnode.el;
     }
-    function updateProperties(el, props = {}) {
-      // 后续写diff算法的时候 在进行完善, 没有考虑样式等
-      for (let key in props) {
-        el.setAttribute(key, props[key]);
-      }
-    }
 
     function mountComponent(vm) {
       let updateComponent = () => {
         vm._update(vm._render());
       };
-
+      // 观察者模式： 属性是“被观察者” 刷新页面: “观察者”
+      callHook(vm, 'beforeMount');
       // 每个组件都有一个 watcher, 我们把这个 watcher 称之为渲染 watcher
       new Watcher(vm, updateComponent, () => {
         console.log('后续增加更新钩子函数 update');
       }, true);
-
+      callHook(vm, 'mounted');
       // updateComponent()
     }
 
     function lifeCycleMixin(Vue) {
       Vue.prototype._update = function (vnode) {
+        // 既有初始化，又有更新
         // 采用的是 先深度遍历 创建节点（遇到节点就创造节点，递归创建）
         const vm = this;
         vm.$el = patch(vm.$el, vnode);
@@ -786,24 +817,55 @@
         }
 
         // console.log(opts.render)
-        mountComponent(vm);
+        mountComponent(vm); // 组件的挂载流程
       };
     }
 
     function createElement(vm, tag, data = {}, ...children) {
-      return vnode(vm, tag, data, children, data.key, undefined);
+      // 如果tag是组件 应该渲染一个组件的vnode
+
+      if (isReservedTag(tag)) {
+        return vnode(vm, tag, data, data.key, children, undefined);
+      } else {
+        const Ctor = vm.$options.components[tag];
+        return createComponent(vm, tag, data, data.key, children, Ctor);
+      }
     }
-    function createText(vm, text) {
+    // 创建组件的虚拟节点, 为了区分组件和元素  data.hook  /  componentOptions
+    function createComponent(vm, tag, data, key, children, Ctor) {
+      // 组件的构造函数
+      if (isObject(Ctor)) {
+        Ctor = vm.$options._base.extend(Ctor); // Vue.extend
+      }
+
+      data.hook = {
+        // 等会渲染组件时 需要调用此初始化方法
+        init(vnode) {
+          let vm = vnode.componentInstance = new Ctor({
+            _isComponent: true
+          }); // new Sub 会用此选项和组件的配置进行合并
+          vm.$mount(); // 组件挂载完成后 会在 vnode.componentInstance.$el => <button>
+        }
+      };
+
+      return vnode(vm, `vue-component-${tag}`, data, key, undefined, undefined, {
+        Ctor,
+        children
+      });
+    }
+    function createTextElement(vm, text) {
       return vnode(vm, undefined, undefined, undefined, undefined, text);
     }
-    function vnode(vm, tag, data, children, key, text) {
+    function vnode(vm, tag, data, key, children, text, componentOptions) {
       return {
         vm,
         tag,
         data,
-        children,
         key,
-        text
+        children,
+        text,
+        componentOptions
+        // .....
       };
     }
 
@@ -816,7 +878,7 @@
       Vue.prototype._v = function (text) {
         // 创建文本的虚拟节点
         const vm = this;
-        return createText(vm, text); // 描述虚拟节点是属于哪个实例的
+        return createTextElement(vm, text); // 描述虚拟节点是属于哪个实例的
       };
 
       Vue.prototype._s = function (val) {
@@ -828,7 +890,7 @@
         const vm = this; // vm中有所有的数据 vm.xxx => vm._data.xxx
         let {
           render
-        } = vm.$options;
+        } = vm.$options; // 就是我们解析出来的 render 方法，同事也有可能是用户写的
         let vnode = render.call(vm);
         return vnode;
       };
@@ -836,12 +898,36 @@
 
     function initGlobalApi(Vue) {
       Vue.options = {}; // 用来存放全局的配置 , 每个组件初始化的时候都会和options选项进行合并
+      /*   Vue.component
+      Vue.filter
+      Vue.directive */
 
       Vue.mixin = function (options) {
         this.options = mergeOptions(this.options, options);
         return this;
       };
       Vue.options._base = Vue; // 无论后续创建多少个子类 都可以通过_base 找到 Vue
+      Vue.options.components = {};
+      Vue.component = function (id, definition) {
+        // 保证组件的隔离， 每个组件都会产生一个新的类，去继承父类
+        definition = this.options._base.extend(definition);
+        this.options.components[id] = definition;
+      };
+
+      // 给个对象返回类
+      Vue.extend = function (opts) {
+        // extend方法就是产生一个继承于Vue的类
+        // 并且身上应该有父类的所有功能
+        const Super = this;
+        const Sub = function VueComponent(options) {
+          this._init(options);
+        };
+        // 原型继承
+        Sub.prototype = Object.create(Super.prototype);
+        Sub.prototype.constructor = Sub;
+        Sub.options = mergeOptions(Super.options, opts); // 只和Vue.options合并
+        return Sub;
+      };
     }
 
     // vue 要如何实现，原型模式，所有的功能都通过原型扩展的方式来添加

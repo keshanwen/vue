@@ -5,7 +5,7 @@ import Dep from "./observe/dep";
 
 export function stateMixin(Vue) {
     Vue.prototype.$watch = function (key, handler, options = {}) {
-        options.user = true
+        options.user = true // 是一个用户自己写 的 watcher
 
         new Watcher(this, key, handler, options)
     }

@@ -8,6 +8,11 @@
 </head>
 
 <body>
+<!--
+  (function anonymous(
+  ) {
+  with(this){return _c('div',{id:"app"},_c('my-button',undefined))}
+  }) -->
   <!--
           1.给组件创建一个构造函数, 基于Vue
           2.开始生成虚拟节点， 对组件进行特殊处理 data.hook = { init () {}}
@@ -19,39 +24,40 @@
 
   <!-- render -> vnode -> 真实dom -->
   <div id="app">
-    {{arr}}
+    <my-button></my-button>
   </div>
   <script src="./vue.js"></script>
   <!-- <script src="node_modules/vue/dist/vue.js"></script> -->
   <script>
-    // Vue.component("my-button", { // Vue.options.components = {"my-button":fn}
-    //   template: '<button>hello</button>'
-    // });
+        Vue.component("my-button", { // Vue.options.components = {"my-button":fn}
+      template: '<button>Vue.component 产生</button>'
+    });
 
 
-    // const vm = new Vue({ // .__proto__
-    //   el: '#app',
-    //   data: {
-    //     arr: 1
-    //   },
-    //   beforeCreate() {
-    //     console.log('beforeCreate', 'parent')
-    //   },
-    //   mounted() {
-    //     console.log('mounted', 'parent')
-    //   },
-      // components: {
-      //   "my-button": {
-      //     template: '<button>world</button>',
-      //     beforeCreate() {
-      //       console.log('beforeCreate', 'child');
-      //     },
-      //     mounted() {
-      //       console.log('mounted', 'child')
-      //     },
-      //   }
-      // }
-    // });
+    const vm = new Vue({ // .__proto__
+      el: '#app',
+      data: {
+        arr: 1
+      },
+      beforeCreate() {
+        console.log('beforeCreate', 'parent')
+      },
+      mounted() {
+        console.log('mounted', 'parent')
+      },
+      components: {
+        "my-button": {
+          template: '<button>world</button>',
+          beforeCreate() {
+            console.log('beforeCreate', 'child');
+          },
+          mounted() {
+            console.log('mounted', 'child')
+          },
+        }
+      }
+    });
+    console.log(vm)
     // vm.arr = [1, 2, 3];
     // setTimeout(() => {
 
@@ -64,25 +70,25 @@
 
         // Vue.options = {beforeCreate:[fn1,fn2]}
 
-        Vue.mixin({
-            beforeCreate(){
-                console.log('before create1')
-            }
-        })
-        Vue.mixin({
-            beforeCreate(){
-                console.log('before create2')
-            }
-        })
-        const vm = new Vue({ // vm.$options.beforeCreate:[fn1,fn2,fn3]
-            el: '#app',
-            data: {
-              arr: 1,
-            },
-            beforeCreate(){
-                console.log('before create3')
-            }
-        });
+        // Vue.mixin({
+        //     beforeCreate(){
+        //         console.log('before create1')
+        //     }
+        // })
+        // Vue.mixin({
+        //     beforeCreate(){
+        //         console.log('before create2')
+        //     }
+        // })
+        // const vm = new Vue({ // vm.$options.beforeCreate:[fn1,fn2,fn3]
+        //     el: '#app',
+        //     data: {
+        //       arr: 1,
+        //     },
+        //     beforeCreate(){
+        //         console.log('before create3')
+        //     }
+        // });
   </script>
 
 </body>

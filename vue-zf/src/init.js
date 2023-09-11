@@ -48,7 +48,7 @@ export function initMixin(Vue) {
         }
 
         // console.log(opts.render)
-       mountComponent(vm)
+       mountComponent(vm,el) // 组件的挂载流程
     }
 
 

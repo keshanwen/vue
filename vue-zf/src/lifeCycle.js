@@ -7,17 +7,19 @@ export function mountComponent(vm) {
   let updateComponent = () => {
     vm._update(vm._render())
   }
-
+  // 观察者模式： 属性是“被观察者” 刷新页面: “观察者”
+  callHook(vm, 'beforeMount')
   // 每个组件都有一个 watcher, 我们把这个 watcher 称之为渲染 watcher
   new Watcher(vm, updateComponent, () => {
     console.log('后续增加更新钩子函数 update')
   }, true)
-
+  callHook(vm, 'mounted')
   // updateComponent()
 }
 
 export function lifeCycleMixin(Vue) {
   Vue.prototype._update = function (vnode) {
+    // 既有初始化，又有更新
     // 采用的是 先深度遍历 创建节点（遇到节点就创造节点，递归创建）
     const vm = this
     vm.$el = patch(vm.$el, vnode)
