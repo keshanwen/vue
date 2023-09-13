@@ -29,11 +29,12 @@
   <script src="./vue.js"></script>
   <!-- <script src="node_modules/vue/dist/vue.js"></script> -->
   <script>
+
         Vue.component("my-button", { // Vue.options.components = {"my-button":fn}
       template: '<button>Vue.component 产生</button>'
     });
 
-
+    debugger
     const vm = new Vue({ // .__proto__
       el: '#app',
       data: {

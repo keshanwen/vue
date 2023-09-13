@@ -691,10 +691,12 @@
     }
 
     function patch(oldVnode, vnode) {
+      debugger;
       if (!oldVnode) {
         return createElm(vnode); // 如果没有el元素，那就直接根据虚拟节点返回真实节点
       }
 
+      // 第一次挂载时， oldVnode 为 $el
       if (oldVnode.nodeType == 1) {
         // 用vnode  来生成真实dom 替换原本的dom元素
         const parentElm = oldVnode.parentNode; // 找到他的父亲
@@ -704,10 +706,136 @@
         parentElm.insertBefore(elm, oldVnode.nextSibling);
         parentElm.removeChild(oldVnode);
         return elm;
+      } else {
+        // 如果标签名称不一样 直接删掉老的换成新的即可
+        if (oldVnode.tag !== vnode.tag) {
+          // 可以通过 vnode.el 属性。获取现在真实的dom 元素
+          return oldVnode.el.parentNode.replaceChild(createElm(vnode), oldVnode.el);
+        }
+
+        // 如果标签一样比较属性， 传入新的虚拟节点，和老的属性。用新的属性更新老的
+        let el = vnode.el = oldVnode.el; // 表示的当前新节点 复用老节点
+
+        // 如果两个虚拟节点是文本节点 比较文本内容...
+
+        if (vnode.tag === undefined) {
+          //  新老都是文本
+          if (oldVnode.text !== vnode.text) {
+            el.textContent = vnode.text;
+          }
+          return;
+        }
+
+        // 属性可能有删除的情况
+        patchProps(vnode, oldVnode.data);
+
+        // 一方有儿子， 一方没儿子
+        let oldChildren = oldVnode.children || [];
+        let newChildren = vnode.children || [];
+        if (oldChildren.length > 0 && newChildren.length > 0) {
+          // 双方都有儿子
+          // vue 用双指针的方式来比对
+          patchChildren(el, oldChildren, newChildren);
+        } else if (newChildren.length > 0) {
+          // 老的没儿子 但是新的有儿子
+          for (let i = 0; i < newChildren.length; i++) {
+            let child = createElm(newChildren[i]);
+            el.appendChild(child); // 循环创建新节点
+          }
+        } else if (oldChildren.length > 0) {
+          // 老的有儿子 新的没儿子
+          el.innerHTML = ``; // 直接删除老节点
+        }
+        // vue 的特点是每一个组件都有一个 watcher, 当前组件中数据变化 只需要更新当前组件
       }
     }
-    // 创建真实节点的
 
+    function isSameVnode(oldVnode, newVnode) {
+      return oldVnode.tag == newVnode.tag && oldVnode.key == newVnode.key;
+    }
+    function patchChildren(el, oldChildren, newChildren) {
+      let oldStartIndex = 0;
+      let oldStartVnode = oldChildren[0];
+      let oldEndIndex = oldChildren.length - 1;
+      let oldEndVnode = oldChildren[oldEndIndex];
+      let newStartIndex = 0;
+      let newStartVnode = newChildren[0];
+      let newEndIndex = newChildren.length - 1;
+      let newEndVnode = newChildren[newEndIndex];
+
+      // 同时循环新的节点和老的节点，有一方循环完毕就结束
+      while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
+        if (isSameVnode(oldStartVnode, newStartVnode)) {
+          // 头头比较， 发现标签一致
+          patch(oldStartVnode, newStartVnode);
+          oldStartVnode = oldChildren[++oldStartIndex];
+          newStartVnode = newChildren[++newStartIndex];
+        } else if (isSameVnode(oldEndVnode, newEndVnode)) {
+          // 从尾部开始比较
+          patch(oldEndVnode, newEndVnode);
+          oldEndVnode = oldChildren[--oldEndIndex];
+          newEndVnode = newChildren[--newEndIndex];
+        } else if (isSameVnode(oldStartVnode, newEndVnode)) {
+          // 头尾比较
+          patch(oldStartVnode, newEndVnode);
+          // 移动老的元素， 老的元素被移动走了，不用删除
+          el.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling);
+          oldStartVnode = oldChildren[++oldStartIndex];
+          newEndVnode = newChildren[--newEndIndex];
+        } else if (isSameVnode(oldEndVnode, newStartVnode)) {
+          // 尾头比较
+          patch(oldEndVnode, newStartVnode);
+          el.insertBefore(oldEndVnode.el, oldStartVnode.el);
+          oldEndVnode = oldChildren[--oldEndIndex];
+          newStartVnode = newChildren[++newStartIndex];
+        }
+      }
+
+      // 这里是没有比对完的
+      if (newStartIndex <= newEndIndex) {
+        for (let i = newStartIndex; i <= newEndIndex; i++) {
+          // 看一下为指针的下一个元素是否存在
+          let anchor = newChildren[newEndIndex + 1] == null ? null : newChildren[newEndIndex + 1].el;
+          el.insertBefore(createElm(newChildren[i]), anchor);
+        }
+      }
+      if (oldStartIndex <= oldEndIndex) {
+        for (let i = oldStartIndex; i <= oldEndIndex; i++) {
+          el.removeChild(oldChildren[i].el);
+        }
+      }
+    }
+    function patchProps(vnode, oldProps = {}) {
+      // 此次渲染时可以调用此方法， 后续更新也可以调用此方法
+      let newProps = vnode.data || {};
+      let el = vnode.el;
+      // 如果老的属性有， 新的没有直接删除
+      let newStyle = newProps.style || {};
+      let oldStyle = oldProps.style || {};
+      for (let key in oldStyle) {
+        if (!newStyle[key]) {
+          // 新的里面不存在这个样式
+          el.style[key] = '';
+        }
+      }
+      for (let key in oldProps) {
+        if (!newProps[key]) {
+          el.removeAttribute(key);
+        }
+      }
+      // 直接用新的生成到元素上
+      for (let key in newProps) {
+        if (key === 'style') {
+          for (let styleName in newProps.style) {
+            el.style[styleName] = newProps.style[styleName];
+          }
+        } else {
+          el.setAttribute(key, newProps[key]);
+        }
+      }
+    }
+
+    // 创建真实节点的
     function createComponent$1(vnode) {
       let i = vnode.data; //  vnode.data.hook.init
       if ((i = i.hook) && (i = i.init)) {
@@ -940,6 +1068,44 @@
     lifeCycleMixin(Vue);
     stateMixin(Vue);
     initGlobalApi(Vue);
+
+    // diff 核心
+    let oldTemplate = `<div>
+    <li key="A">A</li>
+    <li key="B">B</li>
+    <li key="C">C</li>
+    <li key="D">D</li>
+</div>`; // 在最外层创建了一个根节点 vue3可以
+
+    let vm1 = new Vue({
+      data: {
+        message: 'hello world'
+      }
+    });
+    const render1 = compileToFunction(oldTemplate);
+    const oldVnode = render1.call(vm1); // 虚拟dom
+    document.body.appendChild(createElm(oldVnode));
+
+    // v-if   v-else
+    let newTemplate = `<div >
+<li key="D">D</li>
+<li key="A">A</li>
+<li key="B">B</li>
+<li key="C">C</li>
+</div>`;
+    let vm2 = new Vue({
+      data: {
+        message: 'zf'
+      }
+    });
+    const render2 = compileToFunction(newTemplate);
+    const newVnode = render2.call(vm2); // 虚拟dom
+    // 根据新的虚拟节点更新老的节点，老的能复用尽量复用
+
+    setTimeout(() => {
+      patch(oldVnode, newVnode);
+      console.log('setTimeout~~~~~');
+    }, 2000);
 
     // 1.new Vue 会调用_init方法进行初始化操作
     // 2.会将用户的选项放到 vm.$options上
