@@ -22,7 +22,14 @@ export function lifeCycleMixin(Vue) {
     // 既有初始化，又有更新
     // 采用的是 先深度遍历 创建节点（遇到节点就创造节点，递归创建）
     const vm = this
-    vm.$el = patch(vm.$el, vnode)
+    const prevVnode = vm._vnode // 表示将当前的虚拟节点保存起来
+
+    if (!prevVnode) { // 初次渲染
+      vm.$el = patch(vm.$el, vnode)
+    } else {
+      vm.$el = patch(prevVnode, vnode)
+    }
+    vm._vnode = vnode
   }
 
   Vue.prototype.$nextTick = nextTick

@@ -18,7 +18,7 @@ initGlobalApi(Vue)
 
 
 
-import { compileToFunction } from './compiler/index.js';
+/* import { compileToFunction } from './compiler/index.js';
 import { createElm, patch } from './vdom/patch.js'
 
 // diff 核心
@@ -36,6 +36,8 @@ document.body.appendChild(createElm(oldVnode));
 
 // v-if   v-else
 let newTemplate = `<div >
+<li key="E">E</li>
+<li key="F">F</li>
 <li key="D">D</li>
 <li key="A">A</li>
 <li key="B">B</li>
@@ -50,7 +52,7 @@ setTimeout(() => {
     patch(oldVnode, newVnode);
     console.log('setTimeout~~~~~')
 }, 2000);
-
+ */
 
 
 

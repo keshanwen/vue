@@ -691,7 +691,6 @@
     }
 
     function patch(oldVnode, vnode) {
-      debugger;
       if (!oldVnode) {
         return createElm(vnode); // 如果没有el元素，那就直接根据虚拟节点返回真实节点
       }
@@ -753,6 +752,16 @@
     function isSameVnode(oldVnode, newVnode) {
       return oldVnode.tag == newVnode.tag && oldVnode.key == newVnode.key;
     }
+
+    /*
+        Dom 的生成 ast => render方法 => 虚拟节点 => 真实 dom
+        更新的时候需要重新创建 ast 语法树吗？
+        如果动态的添加了节点 （绕过vue添加的vue 监控不到的）难道不需要重新 ast 吗？
+        后续数据变了，只会操作自己管理的dom 元素
+        如果直接操作 dom 和 vue 无关， 不需要重新创建 ast 语法树
+
+    */
+
     function patchChildren(el, oldChildren, newChildren) {
       let oldStartIndex = 0;
       let oldStartVnode = oldChildren[0];
@@ -762,9 +771,24 @@
       let newStartVnode = newChildren[0];
       let newEndIndex = newChildren.length - 1;
       let newEndVnode = newChildren[newEndIndex];
+      const makeIndexByKey = children => {
+        return children.reduce((memo, current, index) => {
+          if (current.key) {
+            memo[current.key] = index;
+          }
+          return memo;
+        }, {});
+      };
+      const keysMap = makeIndexByKey(oldChildren);
 
       // 同时循环新的节点和老的节点，有一方循环完毕就结束
       while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
+        if (!oldStartVnode) {
+          // 已经被移动走了
+          oldStartVnode = oldChildren[++oldStartIndex];
+        } else if (!oldEndVnode) {
+          oldEndVnode = oldChildren[--oldEndIndex];
+        }
         if (isSameVnode(oldStartVnode, newStartVnode)) {
           // 头头比较， 发现标签一致
           patch(oldStartVnode, newStartVnode);
@@ -788,6 +812,20 @@
           el.insertBefore(oldEndVnode.el, oldStartVnode.el);
           oldEndVnode = oldChildren[--oldEndIndex];
           newStartVnode = newChildren[++newStartIndex];
+        } else {
+          // 乱序比对 核心diff
+          let moveIndex = keysMap[newStartVnode.key]; // 用新的去老的中查找
+          if (moveIndex == undefined) {
+            // 如果不能复用直接创建新的插入到老的节点开头处
+            el.insertBefore(createElm(newStartVnode), oldStartVnode.el);
+          } else {
+            let moveNode = oldChildren[moveIndex];
+            oldChildren[moveIndex] = null; // 此节点已经被移动走了
+            el.insertBefore(moveNode.el, oldStartVnode.el);
+            path(moveNode, newStartVnode); // 比较两个节点的属性
+          }
+
+          newStartVnode = newChildren[++newStartIndex];
         }
       }
 
@@ -801,7 +839,10 @@
       }
       if (oldStartIndex <= oldEndIndex) {
         for (let i = oldStartIndex; i <= oldEndIndex; i++) {
-          el.removeChild(oldChildren[i].el);
+          // 如果老的多 将老节点删除， 但是可能里面有 null 的情况
+          if (oldChildren[i] !== null) {
+            el.removeChild(oldChildren[i].el);
+          }
         }
       }
     }
@@ -890,7 +931,15 @@
         // 既有初始化，又有更新
         // 采用的是 先深度遍历 创建节点（遇到节点就创造节点，递归创建）
         const vm = this;
-        vm.$el = patch(vm.$el, vnode);
+        const prevVnode = vm._vnode; // 表示将当前的虚拟节点保存起来
+
+        if (!prevVnode) {
+          // 初次渲染
+          vm.$el = patch(vm.$el, vnode);
+        } else {
+          vm.$el = patch(prevVnode, vnode);
+        }
+        vm._vnode = vnode;
       };
       Vue.prototype.$nextTick = nextTick;
     }
@@ -1068,44 +1117,6 @@
     lifeCycleMixin(Vue);
     stateMixin(Vue);
     initGlobalApi(Vue);
-
-    // diff 核心
-    let oldTemplate = `<div>
-    <li key="A">A</li>
-    <li key="B">B</li>
-    <li key="C">C</li>
-    <li key="D">D</li>
-</div>`; // 在最外层创建了一个根节点 vue3可以
-
-    let vm1 = new Vue({
-      data: {
-        message: 'hello world'
-      }
-    });
-    const render1 = compileToFunction(oldTemplate);
-    const oldVnode = render1.call(vm1); // 虚拟dom
-    document.body.appendChild(createElm(oldVnode));
-
-    // v-if   v-else
-    let newTemplate = `<div >
-<li key="D">D</li>
-<li key="A">A</li>
-<li key="B">B</li>
-<li key="C">C</li>
-</div>`;
-    let vm2 = new Vue({
-      data: {
-        message: 'zf'
-      }
-    });
-    const render2 = compileToFunction(newTemplate);
-    const newVnode = render2.call(vm2); // 虚拟dom
-    // 根据新的虚拟节点更新老的节点，老的能复用尽量复用
-
-    setTimeout(() => {
-      patch(oldVnode, newVnode);
-      console.log('setTimeout~~~~~');
-    }, 2000);
 
     // 1.new Vue 会调用_init方法进行初始化操作
     // 2.会将用户的选项放到 vm.$options上
