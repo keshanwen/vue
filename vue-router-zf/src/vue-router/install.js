@@ -15,6 +15,8 @@ export default function install(_Vue) { //  谁用我这个插件 版本就是�
         this._router = this.$options.router
         this._routerRoot = this // 表示根组件上有唯一的标识，叫_routerRoot 指向了自己
 
+        // 初始化路由的逻辑 只初始化一次
+        this._router.init(this) // 整个应用的根
       } else {
         // 子 孙子
         this._routerRoot = this.$parent && this.$parent._routerRoot // 所有组件都有 _routerRoot._router 获取路由的实例
