@@ -27,9 +27,17 @@ class VueRouter {
                 break
 
         }
+        this.beforeHooks = []
     }
     match(location){
         return this.matcher.match(location);
+    }
+    push(location){
+        // 跳转页面
+        this.history.transitionTo(location,()=>{
+            // pushState
+            this.history.pushState(location);
+        })
     }
     init(app) {
         const history = this.history; // 当前管理路由的
@@ -49,7 +57,13 @@ class VueRouter {
             setUpListener
         );
 
-
+        history.listen((route)=>{
+            // 监听 监听如果current变化了 就重新的给 _route赋值
+            app._route = route;
+        })
+    }
+    beforeEach(fn){
+        this.beforeHooks.push(fn);
     }
 }
 VueRouter.install = install;
@@ -62,3 +76,6 @@ VueRouter.install = install;
 // 没学过node课的听vue3  -> node -> react -> webpack
 
 export default VueRouter
+
+
+// 路由的钩子执行的思路 和 koa -> express 中间件的原理是一样的  就是把u偶有的钩子组成一个数组依次执行

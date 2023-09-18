@@ -3,7 +3,7 @@
 function createRoute(record, location) { // 创建路由
     const matched = [];
     // 不停的去父级查找
-    if(record){
+    if (record) {
         while (record) {
             matched.unshift(record);
             record = record.parent;
@@ -15,6 +15,14 @@ function createRoute(record, location) { // 创建路由
     }
 }
 
+function runQueue(queue,iterator,cb){
+    function step(index){
+        if(index >= queue.length) return cb();
+        let hook = queue[index]; 
+        iterator(hook,()=>step(index+1)); // 第二个参数什么时候调用就走下一次的
+    }
+    step(0);
+}
 export default class History {
     constructor(router) {
         this.router = router;
@@ -22,20 +30,44 @@ export default class History {
         // 当前没有匹配到记录
         this.current = createRoute(null, {
             path: '/'
-        }); // => {path:'/',matched:[]}
+        }); // => {path:'/',matched:[]}    
     }
-    transitionTo(path, cb) {
+    listen(cb){
+        this.cb = cb; // 保存当前的cb函数
+    }
+    transitionTo(path, cb) {  // {path:'/',matched:[record]}
         // 前端路由的实现原理 离不开hash h5
         let record = this.router.match(path); // 匹配到后
-        this.current = createRoute(record, {path});
+        let route = createRoute(record, { path });
+        // 1.保证跳转的路径 和 当前路径一致
+        // 2.匹配的记录个数 应该和 当前的匹配个数一致 说明是相同路由
+        if (path ===  this.current.path && route.matched.length === this.current.matched.length) {
+            return
+        }
+        // 在跳转前  我需要先走对应的钩子
 
-        // 路径变化 需要渲染组件  响应式原理 
-        // 我们需要将currrent属性变成响应式的，这样后续更改current 就可以渲染组件了
-        // Vue.util.defineReactive() === defineReactive
+        // 修改current _route 实现跳转的
+        let queue = this.router.beforeHooks; 
+       
+        const iterator = (hook,next) =>{ // 此迭代函数可以拿到对应的hook
+            hook(route,this.current,next);
+        }
+        runQueue(queue,iterator,()=>{
+            this.updateRoute(route);
+            cb && cb(); // 默认第一次cb是hashchange
 
-        // 我可以在router-view组件中使用current属性，如果路径变化就可以更新router-view了
+            // 后置的钩子 
+        })
 
+        // 更新current 需要重新渲染视图
 
-        cb && cb(); // 默认第一次cb是hashchange
+        // Vue.util.defineReactive();
+        // 如果 两次路由一致  不要跳转了
     }
+    updateRoute(route){
+        this.current = route; // 不光要改变current , 还有改变_route
+        this.cb && this.cb(route); 
+    }
+
+
 }
