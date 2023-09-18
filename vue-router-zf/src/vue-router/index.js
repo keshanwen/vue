@@ -30,6 +30,8 @@ class VueRouter {
         this.history = new HTML5History(this)
         break;
     }
+
+    this.beforeHooks = []
   }
 
   match(location) {
@@ -66,6 +68,9 @@ class VueRouter {
       // 监听如果 current 变化了 就重新给 _route 赋值
       app._route = route
     })
+  }
+  beforeEach(fn) {
+    this.beforeHooks.push(fn)
   }
 }
 

@@ -16,6 +16,15 @@ function createRoute(record, location) { // 创建路由
   }
 }
 
+function runQueue(queue,iterator,cb){
+    function step(index){
+        if(index >= queue.length) return cb();
+        let hook = queue[index];
+        iterator(hook,()=>step(index+1)); // 第二个参数什么时候调用就走下一次的
+    }
+    step(0);
+}
+
 export default class History {
   constructor(router) {
     this.router = router
@@ -48,8 +57,23 @@ export default class History {
 
       我可以在 router-view 组件中使用 current 属性，如果路径变化就可以更新 router-view 了
     */
-   this.updateRoute(route)
-    cb && cb() // 默认第一次cb 是 hashchange
+   // 在跳转前 我需要先走对应的钩子
+
+   // 修改 current  _route 实现跳转
+    let queue = this.router.beforeHooks
+
+    const iterator = (hook, next) => { // 此迭代函数可以拿到对应的 hook
+      hook(route, this.current, next)
+    }
+
+    runQueue(queue, iterator, () => {
+      this.updateRoute(route)
+      cb && cb() // 默认第一次cb 是 hashchange
+
+      // 后置的钩子
+    })
+
+
   }
 
   updateRoute(route){
