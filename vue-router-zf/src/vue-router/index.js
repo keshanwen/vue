@@ -36,6 +36,12 @@ class VueRouter {
     return this.matcher.match(location)
   }
 
+  push(location) {
+    this.history.transitionTo(location, () => {
+      this.history.pushState(location)
+    })
+  }
+
   init(app) {
     const history = this.history // 当前管理路由的
     /*
@@ -55,6 +61,11 @@ class VueRouter {
       history.getCurrentLocation(), // 各自的获取路径方法
       setUpListener
     )
+
+    history.listen((route) => {
+      // 监听如果 current 变化了 就重新给 _route 赋值
+      app._route = route
+    })
   }
 }
 
