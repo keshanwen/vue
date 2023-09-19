@@ -1,42 +1,79 @@
 import { Vue } from './install'
 import { forEach } from './util'
+import ModuleCollection from './module/module-collection';
+
+function installModule(store, rootState, path, module) { // a/b/c/d
+  // 需要循环当前模块
+
+
+  // 获取 moduleCollection 类的实例
+  let ns = store._modules.getNamespace(path)
+  // module.state => 放到 rootState 对应的儿子里
+  if (path.length > 0) { // 儿子模块
+    // 需要找到对应父模块， 将状态声明上去
+    // { name: 'zf', age: '12', a: aState }
+    let parent = path.slice(0, -1).reduce((memo, current) => {
+      return memo[current]
+    }, rootState)
+    // 对象新增属性不能导致更新视图
+    Vue.set(parent, path[path.length - 1], module.state)
+  }
+
+  module.forEachGetter((fn, key) => {
+    store.wrapperGetters[ns + key] = function () {
+      return fn.call(store, module.state)
+    }
+  })
+
+  module.forEachMutation((fn, key) => {
+    store.mutations[ns + key] = store.mutations[ns + key] || []
+    store.mutations[ns + key].push((payload) => {
+      return fn.call(store, module.state, payload)
+    })
+  })
+
+  module.forEachAction((fn, key) => {
+    store.actions[ns + key] = store.actions[ns + key] || []
+    store.actions[ns + key].push((payload) => {
+      return fn.call(store, store, payload)
+    })
+  })
+
+  module.forEachChildren((child, key) => {
+    installModule(store, rootState, path.concat(key), child)
+  })
+
+}
 
 
 class Store {
   constructor(options) {
-    let { state, getters, mutations, actions } = options
-    this.getters = {} // 我再取getters属性的时候 把他代理到计算属性上
-    const computed = {}
-    forEach(getters, (fn, key) => {
-      computed[key] = () => {
-        return fn(this.state) // 为了保证参数是 state
-      }
+    // 对用户的模块进行整合
+    // 当前格式化完毕的数据 放到了 this._moduled 里
+    this._modules = new ModuleCollection(options) // 对用户的参数进行格式化操作
 
-      // 当我们去 getters 上取值 需要对 computed 取值
+    this.wrapperGetters = {}
+    this.getters = {} // 我需要将模块中的所有getters  mutations  actions 进行收集
+    this.mutations = {}
+    this.actions = {}
+    const computed = {}
+    // 没有 namespace 的时候 getters 都放在根上， actions, mutations 会被合并数组
+    let state = options.state
+    installModule(this, state, [], this._modules.root)
+    forEach(this.wrapperGetters, (getter, key) => {
+      computed[key] = getter
       Object.defineProperty(this.getters, key, {
-        get: () => this._vm[key] // 具备了缓存功能
+        get: () => this._vm[key]
       })
     })
 
-    // -------
-    this.mutations = {}
-    forEach(mutations, (fn, key) => {
-      this.mutations[key] = (playload) => fn.call(this, this.state, playload)
-    })
-
-    // ------- dispatch 中派发的是动作， 里面可以有异步逻辑，更改状态都要通过mutation, mutation 是同步更改的------
-    this.actions = {}
-    forEach(actions, (fn, key) => {
-      this.actions[key] = (playload) => fn.call(this, this, playload)
-    })
-
-    // 这个状态在页面渲染时需要收集对应的渲染 watcher, 这样状态更新才会更新视图
     this._vm = new Vue({
-      data: { // $符号开头的数据不会被挂载到实例上， 但是会挂载在当前的 _data上， 减少了一次代理
-        $$state: state  // 状态在哪里取值， 就会收集对应的依赖
+      data: {
+        $$state: state
       },
       computed
     })
+
   }
   /*
     用户组件中使用 $store = this
@@ -47,12 +84,13 @@ class Store {
     // 依赖于  vue 的响应式原理
     return this._vm._data.$$state
   }
-  dispatch = (type, payload) => { // 根据 cmmit 还是 dispatch 找对应的存储结果
-    this.actions[type](payload)
+  commit = (mutationName, payload) => {
+    this.mutations[mutationName] && this.mutations[mutationName].forEach( fn => fn(payload))
   }
-  commit = (type, payload) => {
-    this.mutations[type](payload)
+  dispatch = (actionName, payload) => { // 根据 cmmit 还是 dispatch 找对应的存储结果
+    this.actions[actionName] && this.actions[actionName].forEach( fn => fn(payload))
   }
+
 }
 
 export default Store

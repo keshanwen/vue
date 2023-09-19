@@ -8,7 +8,7 @@
     <button @click="$store.dispatch('changeAge',10)">异步年龄</button>
 
     <hr>
-<!--
+
    t1的年龄 {{this.$store.state.a.name}}  {{this.$store.state.a.age}} <br>
 
    t1的计算年龄  {{this.$store.getters['a/myAge']}}
@@ -16,7 +16,7 @@
   <hr>
 
   c的年龄 {{this.$store.state.a.c.age}}
-  <button @click="$store.commit('a/c/changeAge',10)">t1更改年龄</button> -->
+  <button @click="$store.commit('a/c/changeAge',10)">t1更改年龄</button>
   </div>
 </template>
 

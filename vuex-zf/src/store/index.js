@@ -59,53 +59,53 @@ let store = new Vuex.Store({ // vuex持久化插件？
             return state.age + 10
         }
     },
-    // strict: true, // 如果不是在mutation中操作的状态会发生警告
-    // modules: { // 进行模块分割
-    //     // namespaced 能解决子模块和父模块的命名冲突文件 ，相当于增加了一个命名空间
-    //     // 如果没有namespaced 默认getters都会被定义到父模块上，
-    //     // mutations 会被合并在一起， 最终一起调用，有了命名空间就没有这个问题了
-    //     // 子模块的名字不能和父模块中的状态重名
-    //     a: {
-    //         namespaced: true,
-    //         state: {
-    //             name: 't1',
-    //             age: 10
-    //         },
-    //         // 所有的getters 都会被合并到跟上
-    //         getters: { // 首页一个模块 home 订单页一个模块 order  用户一个模块 user
-    //             myAge(state) {
-    //                 return state.age + 20;
-    //             }
-    //         },
-    //         mutations: {
-    //             changeAge(state, payload) {
-    //                 state.age += payload
-    //             }
-    //         },
-    //         modules: {
-    //             c: {
-    //                 namespaced: true,
-    //                 state: {
-    //                     age: 100
-    //                 },
-    //                 mutations: {
-    //                     changeAge(state, payload) {
-    //                         state.age += payload
-    //                     }
-    //                 },
-    //                 modules: {
-    //                     d: {
-    //                         namespaced: true,
-    //                         state: {
-    //                             age: 100
-    //                         },
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     },
+    strict: true, // 如果不是在mutation中操作的状态会发生警告
+    modules: { // 进行模块分割
+        // namespaced 能解决子模块和父模块的命名冲突文件 ，相当于增加了一个命名空间
+        // 如果没有namespaced 默认getters都会被定义到父模块上，
+        // mutations 会被合并在一起， 最终一起调用，有了命名空间就没有这个问题了
+        // 子模块的名字不能和父模块中的状态重名
+        a: {
+            namespaced: true,
+            state: {
+                name: 't1',
+                age: 10
+            },
+            // 所有的getters 都会被合并到跟上
+            getters: { // 首页一个模块 home 订单页一个模块 order  用户一个模块 user
+                myAge(state) {
+                    return state.age + 20;
+                }
+            },
+            mutations: {
+                changeAge(state, payload) {
+                    state.age += payload
+                }
+            },
+            modules: {
+                c: {
+                    namespaced: true,
+                    state: {
+                        age: 100
+                    },
+                    mutations: {
+                        changeAge(state, payload) {
+                            state.age += payload
+                        }
+                    },
+                    modules: {
+                        d: {
+                            namespaced: true,
+                            state: {
+                                age: 100
+                            },
+                        }
+                    }
+                }
+            }
+        },
 
-    // }
+    }
 })
 
 export default store;
