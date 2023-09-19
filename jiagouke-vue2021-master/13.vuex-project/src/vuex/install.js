@@ -18,6 +18,6 @@ function install(_Vue) {
             }
         }
     })
-} 
+}
 // 父  this.$store -》 子 this.$store -》孙子 this.$store
 export default install
