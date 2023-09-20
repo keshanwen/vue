@@ -5,19 +5,20 @@ import Vuex from '@/vuex'
 Vue.use(Vuex)
 // // new Vue
 
-// function logger() {
-//     return function(store) {
-//         let prevState = JSON.stringify(store.state);
-//         store.subscribe((mutation, state) => { // 所有的更新操作都基于mutation （状态变化都是通过mutation的）
-//             // 如果直接手动的更改状态 此scbscribe是不会执行  commit()
-//             console.log('prevState:' + prevState);
-//             console.log('mutation:' + JSON.stringify(mutation));
-//             console.log('currentState:' + JSON.stringify(state));
-//             prevState = JSON.stringify(state);
 
-//         })
-//     }
-// }
+function logger() {
+    return function(store) {
+        let prevState = JSON.stringify(store.state);
+        store.subscribe((mutation, state) => { // 所有的更新操作都基于mutation （状态变化都是通过mutation的）
+            // 如果直接手动的更改状态 此scbscribe是不会执行  commit()
+            console.log('prevState:' + prevState);
+            console.log('mutation:' + JSON.stringify(mutation));
+            console.log('currentState:' + JSON.stringify(state));
+            prevState = JSON.stringify(state);
+
+        })
+    }
+}
 function persists() {
     return function(store) { // vuex-persists
         let localState = JSON.parse(localStorage.getItem('VUEX:STATE'))
@@ -34,10 +35,10 @@ function persists() {
     }
 }
 let store = new Vuex.Store({ // vuex持久化插件？
-    // plugins: [
-    //     // logger()
-    //     persists() // 每次状态变化都可以存入到localStorage中
-    // ],
+    plugins: [
+        logger()
+        // persists() // 每次状态变化都可以存入到localStorage中
+    ],
     state: { // state = > data
         name: 'zhufeng',
         age: 12

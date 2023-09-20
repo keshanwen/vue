@@ -28,7 +28,16 @@ function installModule(store, rootState, path, module) { // a/b/c/d
   module.forEachMutation((fn, key) => {
     store.mutations[ns + key] = store.mutations[ns + key] || []
     store.mutations[ns + key].push((payload) => {
-      return fn.call(store, module.state, payload)
+      // return fn.call(store, module.state, payload)
+      fn.call(store, module.state, payload)
+
+      store._subscribes.forEach(fn => fn(
+        {
+          type: ns + key,
+          payload
+        },
+        store.state
+      ))
     })
   })
 
@@ -56,6 +65,7 @@ class Store {
     this.getters = {} // 我需要将模块中的所有getters  mutations  actions 进行收集
     this.mutations = {}
     this.actions = {}
+    this._subscribes = []
     const computed = {}
     // 没有 namespace 的时候 getters 都放在根上， actions, mutations 会被合并数组
     let state = options.state
@@ -74,6 +84,9 @@ class Store {
       computed
     })
 
+    if (options.plugins) { // 说明用户使用了插件
+      options.plugins.forEach( plugin => plugin(this))
+    }
   }
   /*
     用户组件中使用 $store = this
@@ -83,6 +96,9 @@ class Store {
   get state() {
     // 依赖于  vue 的响应式原理
     return this._vm._data.$$state
+  }
+  subscribe(fn) {
+    this._subscribes.push(fn)
   }
   commit = (mutationName, payload) => {
     this.mutations[mutationName] && this.mutations[mutationName].forEach( fn => fn(payload))
