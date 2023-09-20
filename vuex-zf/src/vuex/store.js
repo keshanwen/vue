@@ -60,6 +60,29 @@ function installModule(store, rootState, path, module) { // a/b/c/d
 
 }
 
+function resetVM(store, state) {
+  let oldVm = store._vm
+  store.getters = {}
+  const computed = {}
+  forEach(store.wrapperGetters, (getter, key) => {
+    computed[key] = getter
+    Object.defineProperty(store.getters, key, {
+      get: () => store._vm[key]
+    })
+  })
+  store._vm = new Vue({
+    data: {
+      $$state: state
+    },
+    computed
+  })
+
+  // 重新创建实例后， 需要将老的实例卸载掉
+  if (oldVm) {
+    Vue.nextTick( () => oldVm.$destroy() )
+  }
+}
+
 
 class Store {
   constructor(options) {
@@ -76,19 +99,8 @@ class Store {
     // 没有 namespace 的时候 getters 都放在根上， actions, mutations 会被合并数组
     let state = options.state
     installModule(this, state, [], this._modules.root)
-    forEach(this.wrapperGetters, (getter, key) => {
-      computed[key] = getter
-      Object.defineProperty(this.getters, key, {
-        get: () => this._vm[key]
-      })
-    })
 
-    this._vm = new Vue({
-      data: {
-        $$state: state
-      },
-      computed
-    })
+    resetVM(this, state)
 
     if (options.plugins) { // 说明用户使用了插件
       options.plugins.forEach( plugin => plugin(this))
@@ -118,6 +130,19 @@ class Store {
     this.actions[actionName] && this.actions[actionName].forEach( fn => fn(payload))
   }
 
+  registerModule(path, module) { // 最终都会转成数组 register(['a', 'c'])
+    if (typeof path === 'string') path = [path]
+
+    // modules 是用户直接写的
+    this._modules.register(path, module) // 模块的注册， 将用户给的数据放到树中
+    // 注册完毕后， 在进行安装
+
+    // 将用户的 module 重新安装
+    installModule(this, this.state, path, module.newModule)
+
+    // vuex 内部重新注册的话 会重新生成实例， 虽然重新安装了， 只解决了状态的问题， 但是computed 就丢失了
+    resetVM(this, this.state) // 销毁重新来
+  }
 }
 
 export default Store

@@ -38,7 +38,7 @@ function persists() {
 let store = new Vuex.Store({ // vuex持久化插件？
     plugins: [
         // logger()
-        persists() // 每次状态变化都可以存入到localStorage中
+        // persists() // 每次状态变化都可以存入到localStorage中
     ],
     state: { // state = > data
         name: 'zhufeng',
