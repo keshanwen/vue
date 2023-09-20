@@ -19,10 +19,11 @@ function logger() {
         })
     }
 }
+
 function persists() {
     return function(store) { // vuex-persists
         let localState = JSON.parse(localStorage.getItem('VUEX:STATE'))
-        if (localState) {
+        if (localState) { // 刷新的时候，重新赋值
             store.replaceState(localState);
         }
 
@@ -36,8 +37,8 @@ function persists() {
 }
 let store = new Vuex.Store({ // vuex持久化插件？
     plugins: [
-        logger()
-        // persists() // 每次状态变化都可以存入到localStorage中
+        // logger()
+        persists() // 每次状态变化都可以存入到localStorage中
     ],
     state: { // state = > data
         name: 'zhufeng',

@@ -2,6 +2,12 @@ import { Vue } from './install'
 import { forEach } from './util'
 import ModuleCollection from './module/module-collection';
 
+function getNewState(store, path) {
+  return path.reduce((memo, current) => {
+    return memo[current]
+   }, store.state)
+}
+
 function installModule(store, rootState, path, module) { // a/b/c/d
   // 需要循环当前模块
 
@@ -21,7 +27,7 @@ function installModule(store, rootState, path, module) { // a/b/c/d
 
   module.forEachGetter((fn, key) => {
     store.wrapperGetters[ns + key] = function () {
-      return fn.call(store, module.state)
+      return fn.call(store, getNewState(store, path))
     }
   })
 
@@ -29,7 +35,7 @@ function installModule(store, rootState, path, module) { // a/b/c/d
     store.mutations[ns + key] = store.mutations[ns + key] || []
     store.mutations[ns + key].push((payload) => {
       // return fn.call(store, module.state, payload)
-      fn.call(store, module.state, payload)
+      fn.call(store, getNewState(store, path), payload)
 
       store._subscribes.forEach(fn => fn(
         {
@@ -99,6 +105,11 @@ class Store {
   }
   subscribe(fn) {
     this._subscribes.push(fn)
+  }
+  replaceState(newState) { // 需要替换的状态
+    this._vm._data.$$state = newState // 替换最新的状态， 赋予对象类型会被重新劫持
+
+    // 虽然替换了状态， 但是在 mutation getter中的 state 在初始化的时候 已经被绑定死了老状态
   }
   commit = (mutationName, payload) => {
     this.mutations[mutationName] && this.mutations[mutationName].forEach( fn => fn(payload))
