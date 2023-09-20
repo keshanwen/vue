@@ -22,7 +22,10 @@ function installModule(store, rootState, path, module) { // a/b/c/d
       return memo[current]
     }, rootState)
     // 对象新增属性不能导致更新视图
-    Vue.set(parent, path[path.length - 1], module.state)
+    store._withCommittting(() => {
+      Vue.set(parent, path[path.length - 1], module.state)
+    })
+
   }
 
   module.forEachGetter((fn, key) => {
@@ -35,7 +38,9 @@ function installModule(store, rootState, path, module) { // a/b/c/d
     store.mutations[ns + key] = store.mutations[ns + key] || []
     store.mutations[ns + key].push((payload) => {
       // return fn.call(store, module.state, payload)
-      fn.call(store, getNewState(store, path), payload)
+      store._withCommittting(() => {
+        fn.call(store, getNewState(store, path), payload)
+      })
 
       store._subscribes.forEach(fn => fn(
         {
@@ -77,6 +82,16 @@ function resetVM(store, state) {
     computed
   })
 
+  if (store.strict) { // 说明是严格模式我要监控状态
+    store._vm.$watch(() => store._vm._data.$$state, () => {
+      // 我希望状态变化后 直接就能监控到 ， watcher 都是异步的 ？ 状态变化会立即执行， 不是异步 watcher
+      console.assert(store._committing, 'no mutate in mutation handler outside')
+    }, {
+      deep: true,
+      sync: true
+    })
+  }
+
   // 重新创建实例后， 需要将老的实例卸载掉
   if (oldVm) {
     Vue.nextTick( () => oldVm.$destroy() )
@@ -95,7 +110,10 @@ class Store {
     this.mutations = {}
     this.actions = {}
     this._subscribes = []
-    const computed = {}
+    this._committing = false // 默认是不在 mutation 中更改的
+
+    this.strict = options.strict
+
     // 没有 namespace 的时候 getters 都放在根上， actions, mutations 会被合并数组
     let state = options.state
     installModule(this, state, [], this._modules.root)
@@ -115,11 +133,19 @@ class Store {
     // 依赖于  vue 的响应式原理
     return this._vm._data.$$state
   }
+  _withCommittting(fn) {
+    this._committing = true
+    fn() // 函数是同步的 获取_commiting 就是 true, 如果是异步的那么就会变成 false 就会打印日志
+    this._committing = false
+  }
   subscribe(fn) {
     this._subscribes.push(fn)
   }
   replaceState(newState) { // 需要替换的状态
-    this._vm._data.$$state = newState // 替换最新的状态， 赋予对象类型会被重新劫持
+    this._withCommittting(() => {
+        this._vm._data.$$state = newState // 替换最新的状态， 赋予对象类型会被重新劫持
+    })
+
 
     // 虽然替换了状态， 但是在 mutation getter中的 state 在初始化的时候 已经被绑定死了老状态
   }
