@@ -1,30 +1,32 @@
-// 1.希望拿到packages 下的所有包 
-const fs = require('fs'); // node中的一个文件读取模块 
+// 把package 目录下的所有包都进行打包
 
 
-// execa 可以单独开一个子进程执行命令 node中得一个模块
-const execa = require('execa'); // 作用是单独开启一个进程进行打包
-// 读取文件夹的目录
-const targets = fs.readdirSync('packages').filter(item => {
-    // 判断文件或文件夹的状态 
-    return fs.statSync(`packages/${item}`).isDirectory()
-})
 
-async function build(target){
-    // rollup -c --enviroment TARGET:shared
-    return execa('rollup',['-c','--environment','TARGET:'+target],{stdio:'inherit'}); // 表示子进程中的输出结果会输出到父进程中 
-}
+const fs = require('fs');
+const execa = require('execa'); // 开启子进程 进行打包， 最终还是使用rollup来进行打包
 
-function runAll(targets){
-    let results = [];
-    for(target of targets){
-        results.push(build(target));
+
+const targets = fs.readdirSync('packages').filter(f =>{
+    if(!fs.statSync(`packages/${f}`).isDirectory()){
+        return false;
     }
-    return Promise.all(results); // 多个文件夹并行打包
+    return true;
+})
+
+// 对我们目标进行依次打包 ，并行打包
+
+async function build(target){ // rollup  -c --environment TARGET:shated
+    await execa('rollup',['-c','--environment',`TARGET:${target}`],{stdio:'inherit'}); // 当子进程打包的信息共享给父进程
+}
+
+function runParallel(targets,iteratorFn){
+    const res = []
+    for(const item of targets){
+        const p = iteratorFn(item)
+        res.push(p);
+    }
+    return Promise.all(res)
 }
 
 
-// 打包这些文件
-runAll(targets).then(()=>{
-    console.log('打包完毕')
-})
+runParallel(targets,build)

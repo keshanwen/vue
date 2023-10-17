@@ -1,11 +1,16 @@
-// 专门为了开发而使用得
+// 只针对具体的某个包打包
+
+
+
 const fs = require('fs');
-const execa = require('execa');
+const execa = require('execa'); // 开启子进程 进行打包， 最终还是使用rollup来进行打包
 
-const target = 'runtime-dom'; // 在开发得时候 我可以指定打包得具体是哪一个模块，只有 npm run build得时候才需要对 pacakges 下得所有模块进行打包
+const target = 'reactivity'
 
-async function build(target){
-    // rollup -c --enviroment TARGET:shared
-    return execa('rollup',['-cw','--environment','TARGET:'+target],{stdio:'inherit'}); // 表示子进程中的输出结果会输出到父进程中 
-}
+
+// 对我们目标进行依次打包 ，并行打包
+
 build(target)
+async function build(target){ // rollup  -c --environment TARGET:shated
+    await execa('rollup',['-cw','--environment',`TARGET:${target}`],{stdio:'inherit'}); // 当子进程打包的信息共享给父进程
+}
