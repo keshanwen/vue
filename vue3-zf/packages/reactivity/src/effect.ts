@@ -94,7 +94,13 @@ export function trigger(target, type, key?, newValue?, oldValue?) {
         }
     }
   }
-  effects.forEach((effect: any) => effect());
+  effects.forEach((effect: any) => {
+    if (effect.options.scheduler) {
+      effect.options.scheduler(effect)
+    } else {
+      effect()
+    }
+  });
 }
 // weakMap {name:'zf',age:12}  (map) =>{name => set(effect),age => set(effect)}
 // {name:'zf',age:12} => name => [effect effect]

@@ -1,6 +1,7 @@
 const isObject = (value) => typeof value == 'object' && value !== null;
 const extend = Object.assign;
 const isArray = Array.isArray;
+const isFunction = (value) => typeof value == 'function';
 const isIntegerKey = (key) => parseInt(key) + '' === key;
 let hasOwnpRroperty = Object.prototype.hasOwnProperty;
 const hasOwn = (target, key) => hasOwnpRroperty.call(target, key);
@@ -98,7 +99,14 @@ function trigger(target, type, key, newValue, oldValue) {
                 }
         }
     }
-    effects.forEach((effect) => effect());
+    effects.forEach((effect) => {
+        if (effect.options.scheduler) {
+            effect.options.scheduler(effect);
+        }
+        else {
+            effect();
+        }
+    });
 }
 // weakMap {name:'zf',age:12}  (map) =>{name => set(effect),age => set(effect)}
 // {name:'zf',age:12} => name => [effect effect]
@@ -289,5 +297,52 @@ function toRefs(object) {
     return ret;
 }
 
-export { effect, reactive, readonly, ref, shallowReactive, shallowReadonly, shallowRef, toRef, toRefs };
+// 作业：调试 collectionHandlers ref 的api 和 computed
+class ComputedRefImpl {
+    setter;
+    _dirty = true; // 默认取值时不要用缓存
+    _value;
+    effect;
+    constructor(getter, setter) {
+        this.setter = setter;
+        this.effect = effect(getter, {
+            lazy: true,
+            scheduler: () => {
+                if (!this._dirty) {
+                    this._dirty = true;
+                    trigger(this, 1 /* SET */, 'value');
+                }
+            }
+        });
+    }
+    get value() {
+        if (this._dirty) {
+            this._value = this.effect(); // 会将用户的反回值返回
+            this._dirty = false;
+        }
+        track(this, 0 /* GET */, 'value');
+        return this._value;
+    }
+    set value(newValue) {
+        this.setter(newValue);
+    }
+}
+// vue2 和 vue3 computed原理是不一样的
+function computed(getterOrOptions) {
+    let getter;
+    let setter;
+    if (isFunction(getterOrOptions)) {
+        getter = getterOrOptions;
+        setter = () => {
+            console.warn('computed value must be readonly');
+        };
+    }
+    else {
+        getter = getterOrOptions.get;
+        setter = getterOrOptions.set;
+    }
+    return new ComputedRefImpl(getter, setter);
+}
+
+export { computed, effect, reactive, readonly, ref, shallowReactive, shallowReadonly, shallowRef, toRef, toRefs };
 //# sourceMappingURL=reactivity.esm-bundler.js.map
