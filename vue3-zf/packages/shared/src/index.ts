@@ -10,3 +10,5 @@ let hasOwnpRroperty = Object.prototype.hasOwnProperty;
 export const hasOwn = (target, key) => hasOwnpRroperty.call(target, key);
 
 export const hasChanged = (oldValue, value) => oldValue !== value;
+
+export * from './shapeFlag'

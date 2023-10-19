@@ -5,7 +5,7 @@
 const fs = require('fs');
 const execa = require('execa'); // 开启子进程 进行打包， 最终还是使用rollup来进行打包
 
-const target = 'reactivity'
+const target = 'runtime-dom'
 
 
 // 对我们目标进行依次打包 ，并行打包
