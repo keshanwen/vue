@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+
+</body>
+</html>
+<script>
+const data = { text: 'hello wrold' }
+
+let activeEffect
+const bucket = new WeakMap()
+
+function effect(fn) {
+  activeEffect = fn
+  fn()
+}
+
+const obj = new Proxy(data, {
+  get(target, p, receiver) {
+    track(target, p)
+    return Reflect.get(...arguments)
+  },
+  set(target, p, value, receiver) {
+    Reflect.set(...arguments)
+    trigger(target,p)
+    return Reflect.set(...arguments)
+  }
+})
+
+function track(target, key) {
+  if (!activeEffect) return target[key]
+  let depsMap = bucket.get(target)
+  if (!depsMap) {
+    bucket.set(target, depsMap = new Map())
+  }
+  let deps = depsMap.get(key)
+  if (!deps) {
+    depsMap.set(key, (deps = new Set()))
+  }
+  deps.add(activeEffect)
+}
+
+function trigger(target, key) {
+  const depsMap = bucket.get(target)
+  if (!depsMap) return true
+  const effects = depsMap.get(key)
+  effects && effects.forEach(fn => fn())
+  return true
+}
+
+
+effect( () => {
+   console.log('effect run')
+  document.body.innerHTML = obj.text
+})
+
+    setTimeout(() => {
+      obj.text = 'heeeeeeeeee'
+    }, 1000)
+
+</script>
