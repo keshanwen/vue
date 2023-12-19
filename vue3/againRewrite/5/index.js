@@ -4,6 +4,7 @@ jobQueue = new Set()
 
 const bucket = new WeakMap()
 const p = Promise.resolve()
+const ITERATE_KEY = Symbol('iterate key')
 
 let isFlushing = false
 function flusJob() {
@@ -60,16 +61,27 @@ function track(target, key) {
 }
 
 
-function trigger(target, key) {
+function trigger(target, key, type) {
   const depsMap = bucket.get(target)
   if (!depsMap) return
   const effects = depsMap.get(key)
+  const iterateEffects = depsMap.get(ITERATE_KEY)
+
   const effectToRun = new Set()
   effects && effects.forEach(effectFn => {
     if (effectFn !== activeEffect) {
       effectToRun.add(effectFn)
     }
   })
+
+  // 如果操作是添加操作， 才将iterate_key 相关联的副作用函数取出执行
+  if (type === 'ADD' || type === 'DELETE') {
+    iterateEffects && iterateEffects.forEach(fn => {
+      if (fn !== activeEffect) {
+        effectToRun.add(fn)
+      }
+    })
+  }
 
   effectToRun && effectToRun.forEach(fn => {
     if (fn.options.scheduler) {
@@ -80,7 +92,7 @@ function trigger(target, key) {
   })
 }
 
-const data = {
+/* const data = {
   foo: 1,
   get bar() {
     // console.log(this === data, 'this~~~~~~~~~~~')
@@ -90,6 +102,12 @@ const data = {
   set bar(v) {
     this.foo += v
   }
+}
+ */
+
+const data = {
+  foo: 1,
+  bar: 2
 }
 
 const obj = new Proxy(data, {
@@ -102,15 +120,38 @@ const obj = new Proxy(data, {
     return Reflect.get(...arguments)
   },
   set(target,p,value,receiver) {
-    Reflect.set(...arguments)
-    trigger(target, p)
-    return true
+    const type = Object.prototype.hasOwnProperty.call(target, p) ? 'SET' : 'ADD'
+    const res = Reflect.set(...arguments)
+    trigger(target, p, type)
+    return res
+  },
+  has(target,p) {
+    track(target, p)
+    return Reflect.has(target,p)
+  },
+  ownKeys(target) {
+    track(target, ITERATE_KEY)
+    return Reflect.ownKeys(target)
+  },
+  deleteProperty(target, p) { // 拦截delete操作, delete操作也会影响for in 循环，所以传递DELETE参数到trigger函数
+        const hasKey = Object.prototype.hasOwnProperty.call(target, p) // 测试target是否有这个property
+        const res = Reflect.deleteProperty(target, p)
+        if (hasKey && res) { // 删除成功且target有这个key
+            trigger(target, p, 'DELETE')
+        }
+      return res
   }
 })
 
+
 effect(() => {
-  console.log('effect!!')
-  console.log(obj.bar)
+  for (const key in obj) {
+    console.log(key)
+  }
 })
 
-obj.foo++
+// delete obj.foo
+
+// setTimeout(() => {
+//   obj.name = 'kebi'
+// },2000)
