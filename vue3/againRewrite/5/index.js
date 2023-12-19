@@ -110,48 +110,55 @@ const data = {
   bar: 2
 }
 
-const obj = new Proxy(data, {
-  get(target, p, receiver) {
-    /*
-      可以理解 receiver 为当前调用的 proxy 实列。Reflect.get(target,p,receiver)
-      将当前proxy 实列传递下去， 在 Reflect 的参数 receiver 可以简单理解为 this 指向
-     */
-    track(target, p)
-    return Reflect.get(...arguments)
-  },
-  set(target,p,value,receiver) {
-    const type = Object.prototype.hasOwnProperty.call(target, p) ? 'SET' : 'ADD'
-    const res = Reflect.set(...arguments)
-    trigger(target, p, type)
-    return res
-  },
-  has(target,p) {
-    track(target, p)
-    return Reflect.has(target,p)
-  },
-  ownKeys(target) {
-    track(target, ITERATE_KEY)
-    return Reflect.ownKeys(target)
-  },
-  deleteProperty(target, p) { // 拦截delete操作, delete操作也会影响for in 循环，所以传递DELETE参数到trigger函数
-        const hasKey = Object.prototype.hasOwnProperty.call(target, p) // 测试target是否有这个property
-        const res = Reflect.deleteProperty(target, p)
-        if (hasKey && res) { // 删除成功且target有这个key
-            trigger(target, p, 'DELETE')
+function reactive(obj) {
+  return new Proxy(obj, {
+    get(target, p, receiver) {
+      if (p === 'raw') {
+        return target
+      }
+      track(target, p)
+      return Reflect.get(...arguments)
+    },
+    set(target,p,value, receiver) {
+      const oldValue = target[p]
+      const type = Object.prototype.hasOwnProperty.call(target, p) ? 'SET' : 'ADD'
+      const res = Reflect.set(...arguments)
+      if (receiver.raw === target) { // receiver 是被代理对象 target的 proxy, 才继续更新
+        if (oldValue !== value && (!Number.isNaN(oldValue) || !Number.isNaN(value))) {
+          trigger(target,p,type)
         }
+      }
       return res
-  }
-})
+    },
+    has(target,p) {
+      track(target, p)
+      return Reflect.has(target,p)
+    },
+    ownKeys(target) {
+      track(target, ITERATE_KEY)
+      return Reflect.ownKeys(target)
+    },
+    deleteProperty(target,p) {
+      const hasKey = Object.prototype.hasOwnProperty.call(target, p)
+      const res = Reflect.deleteProperty(target, p)
+      if (hasKey && res) {
+        trigger(target,p, 'DELETE')
+      }
+      return res
+    }
+  })
+}
 
+const obj = {}
+proto = { bar: 1 }
+child = reactive(obj)
+parent = reactive(proto)
+
+Object.setPrototypeOf(child, parent)
 
 effect(() => {
-  for (const key in obj) {
-    console.log(key)
-  }
+  console.log('effect ~~~~')
+  console.log(child.bar)
 })
 
-// delete obj.foo
-
-// setTimeout(() => {
-//   obj.name = 'kebi'
-// },2000)
+child.bar++
