@@ -110,7 +110,7 @@ const data = {
   bar: 2
 }
 
-function reactive(obj) {
+/* function reactive(obj) {
   return new Proxy(obj, {
     get(target, p, receiver) {
       if (p === 'raw') {
@@ -148,17 +148,68 @@ function reactive(obj) {
     }
   })
 }
+ */
+function createReactive(obj, isShallow = false) {
+  return new Proxy(obj, {
+    get(target,key, receiver) {
+      if (key === 'raw') {
+        return target
+      }
+      const res = Reflect.get(target, key, receiver)
+      track(target, key)
+      // 如果是浅响应，则直接返回原始值
+      if (isShallow) {
+        return res
+      }
+      if (typeof res === 'object' && res !== null) {
+        return createReactive(res)
+      }
+      return res
+    },
+    set(target,p,value, receiver) {
+      const oldValue = target[p]
+      const type = Object.prototype.hasOwnProperty.call(target, p) ? 'SET' : 'ADD'
+      const res = Reflect.set(...arguments)
+      if (receiver.raw === target) {
+        if (oldValue !== value && (!Number.isNaN(oldValue) && !Number.isNaN(value))) {
+          trigger(target,p,type)
+        }
+      }
+      return res
+    }
+  })
+}
 
-const obj = {}
-proto = { bar: 1 }
-child = reactive(obj)
-parent = reactive(proto)
+function reactive(obj) {
+  return createReactive(obj)
+}
 
-Object.setPrototypeOf(child, parent)
 
-effect(() => {
-  console.log('effect ~~~~')
-  console.log(child.bar)
+function shallowReactive(obj) {
+  return createReactive(obj, true)
+}
+
+
+/* const obj = reactive({
+    foo: {
+        name: 'kebi'
+    }
 })
 
-child.bar++
+
+effect(() => {
+    console.log('effect~')
+    console.log(obj.foo.name)
+})
+
+
+obj.foo.name = 'kebi is best' */
+
+const obj = shallowReactive({foo:{bar:1}})
+effect(() => {
+  // console.log(obj.foo, 'effect~~~~')
+	console.log(obj.foo.bar, 'effect~~~~~')
+})
+
+// obj.foo = {bar:2}
+obj.foo.bar = 3
