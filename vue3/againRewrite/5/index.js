@@ -83,6 +83,15 @@ function trigger(target, key, type) {
     })
   }
 
+  if (type === 'ADD' && Array.isArray(target)) {
+    const lengthEffects = depsMap.get('length')
+    lengthEffects && lengthEffects.forEach(effectFn => {
+      if (effectFn !== activeEffect) {
+        effectToRun.add(effectFn)
+      }
+    })
+  }
+
   effectToRun && effectToRun.forEach(fn => {
     if (fn.options.scheduler) {
       fn.options.scheduler(fn)
@@ -152,6 +161,7 @@ const data = {
 function createReactive(obj, isShallow = false, isReadonly = false) {
   return new Proxy(obj, {
     get(target, key, receiver) {
+      console.log('get: ', key)
       if (key === 'raw') {
         return target
       }
@@ -167,20 +177,30 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
       }
       return res
     },
-    set(target,key,value,receiver) {
+    set(target, key, value, receiver) {
+      console.log('set: ', key )
       if (isReadonly) {
         console.warn(`属性${key}是只读`)
         return true
       }
       const oldValue = target[p]
-      const type = Object.prototype.hasOwnProperty.call(target, p) ? 'SET' : 'ADD'
-      const res = Reflect.set(...arguments)
+      const type = Array.isArray(target) ? Number(key) < target.length ? 'SET' : 'ADD' :
+        Object.prototype.hasOwnProperty.call(target, key) ? 'SET' : 'ADD'
+      const res = Reflect.set(target, key, value, receiver)
       if (receiver.raw === target) {
         if (oldValue !== value && (!Number.isNaN(oldValue) || !Number.isNaN(value))) {
           trigger(target,p, type)
         }
       }
       return res
+    },
+    has(target, key) {
+      track(target, key)
+      return Reflect.has(target, key)
+    },
+    ownKeys(target) {
+      track(target, ITERATE_KEY)
+      return Reflect.ownKeys(target)
     },
     deleteProperty(target, key) {
       if (isReadonly) {
@@ -256,3 +276,12 @@ obj.foo.bar = 3 */
 delete obj.a.b
 
 console.log(obj) */
+
+const arr = reactive(['foo'])
+
+
+effect(() => {
+  console.log(arr.length, 'effetc run ~~~~~~~~~~~~~~~~~~~~')
+})
+
+arr[2] = 24
