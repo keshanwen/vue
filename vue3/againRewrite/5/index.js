@@ -149,31 +149,48 @@ const data = {
   })
 }
  */
-function createReactive(obj, isShallow = false) {
+function createReactive(obj, isShallow = false, isReadonly = false) {
   return new Proxy(obj, {
-    get(target,key, receiver) {
+    get(target, key, receiver) {
       if (key === 'raw') {
         return target
       }
       const res = Reflect.get(target, key, receiver)
-      track(target, key)
-      // 如果是浅响应，则直接返回原始值
+      if (!isReadonly) {
+        track(target, key)
+      }
       if (isShallow) {
         return res
       }
       if (typeof res === 'object' && res !== null) {
-        return createReactive(res)
+        return isReadonly ? readonly(res) : createReactive(res)
       }
       return res
     },
-    set(target,p,value, receiver) {
+    set(target,key,value,receiver) {
+      if (isReadonly) {
+        console.warn(`属性${key}是只读`)
+        return true
+      }
       const oldValue = target[p]
       const type = Object.prototype.hasOwnProperty.call(target, p) ? 'SET' : 'ADD'
       const res = Reflect.set(...arguments)
       if (receiver.raw === target) {
-        if (oldValue !== value && (!Number.isNaN(oldValue) && !Number.isNaN(value))) {
-          trigger(target,p,type)
+        if (oldValue !== value && (!Number.isNaN(oldValue) || !Number.isNaN(value))) {
+          trigger(target,p, type)
         }
+      }
+      return res
+    },
+    deleteProperty(target, key) {
+      if (isReadonly) {
+        console.warn(`属性${key}是只读`)
+        return true
+      }
+      const hasKey = Object.prototype.hasOwnProperty.call(target, p)
+      const res = Reflect.deleteProperty(target, p)
+      if (hasKey && res) {
+        trigger(target,p, 'DELETE')
       }
       return res
     }
@@ -189,8 +206,16 @@ function shallowReactive(obj) {
   return createReactive(obj, true)
 }
 
+function readonly(obj) {
+  return createReactive(obj, false, true)
+}
 
-/* const obj = reactive({
+function shallowReadonly(obj) {
+  return createReactive(obj, true, true)
+}
+
+/*
+const obj = reactive({
     foo: {
         name: 'kebi'
     }
@@ -205,11 +230,29 @@ effect(() => {
 
 obj.foo.name = 'kebi is best' */
 
-const obj = shallowReactive({foo:{bar:1}})
+/* const obj = shallowReactive({foo:{bar:1}})
 effect(() => {
   // console.log(obj.foo, 'effect~~~~')
 	console.log(obj.foo.bar, 'effect~~~~~')
 })
 
 // obj.foo = {bar:2}
-obj.foo.bar = 3
+obj.foo.bar = 3 */
+
+/* const obj = readonly({
+  a: {
+    b: 'bbbbbb'
+  }
+})
+ */
+
+/* const obj = shallowReadonly({
+  a: {
+    b: 'bbbbbb'
+  }
+})
+
+// obj.a.b = '111'
+delete obj.a.b
+
+console.log(obj) */
