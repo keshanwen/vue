@@ -1,10 +1,18 @@
-<div id="app"></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app"></div>
 
-<div data-a="3" mmm="asdf" draggable="true"></div>
+  <div data-a="3" mmm="asdf" draggable="true"></div>
 
-<input value="aaa" />
-
-<!-- <script src="https://unpkg.com/@vue/reactivity@3.0.5/dist/reactivity.global.js"></script> -->
+  <input value="aaa" />
+</body>
+</html>
 <script>
 
 function createRenderer(options) {
@@ -20,8 +28,8 @@ function createRenderer(options) {
     if (typeof vnode.children === 'string') {
       setElementText(el, vnode.children)
     } else if (Array.isArray(vnode.children)) {
-      vnode.children.forEach(child => {
-        patch(null, child, el)
+      vnode.children.forEach( child => {
+        patch(null, child,el)
       })
     }
 
@@ -38,22 +46,21 @@ function createRenderer(options) {
     if (!n1) {
       mountElement(n2, container)
     } else {
-      //
+
     }
   }
 
   function render(vnode, container) {
-		if (vnode) {
-      // 新 vnode 存在，将其与旧 vnode 一起传递给 patch 函数进行打补丁
+    if (vnode) {
+      // 新 vnode 存在， 将其与旧 vnode 一起传递给 patch 函数进行打补丁
       patch(container._vnode, vnode, container)
     } else {
       if (container._vnode) {
-        // 旧 vnode 存在，且新 vnode 不存在，说明是卸载(unmount)操作
-        // 只需要将 container 内的 DOM 清空即可
+        // 旧 vnode 存在，且新 vnode 不存在，说明是卸载（unmount）操作。 只需要将 container 内的 DOM 清空即可
         container.innerHTML = ''
       }
     }
-    // 把 vnode 存储到 container._vnode 下，即后续渲染中的旧 vnode
+    // 把 vnode 存储到 container._vnode 下，肌后续渲染中的旧 vnode
     container._vnode = vnode
   }
 
@@ -69,7 +76,7 @@ const renderer = createRenderer({
   setElementText(el, text) {
     el.textContent = text
   },
-  insert(el, parent, anchor = null) {
+  insert(el,parent, anchor = null) {
     parent.insertBefore(el, anchor)
   }
 })
@@ -86,7 +93,10 @@ const vnode = {
     }
   ]
 }
+
+
 renderer.render(vnode, document.querySelector('#app'))
+
 
 
 </script>
