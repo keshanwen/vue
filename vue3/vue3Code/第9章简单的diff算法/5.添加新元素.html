@@ -97,7 +97,7 @@ function createRenderer(options) {
           patch(null, newVNode, container, anchor)
         }
       }
-      
+
     } else {
       if (Array.isArray(n1.children)) {
         n1.children.forEach(c => unmount(c))
@@ -111,7 +111,7 @@ function createRenderer(options) {
     const el = n2.el = n1.el
     const oldProps = n1.props
     const newProps = n2.props
-    
+
     for (const key in newProps) {
       if (newProps[key] !== oldProps[key]) {
         patchProps(el, key, oldProps[key], newProps[key])
@@ -183,7 +183,7 @@ function patch(n1, n2, container, anchor) {
     // 把 vnode 存储到 container._vnode 下，即后续渲染中的旧 vnode
     container._vnode = vnode
   }
-  
+
   return {
     render
   }
