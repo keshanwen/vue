@@ -147,8 +147,85 @@
     return root
   }
 
-  console.log(pasre(template))
 
+  function dump(node, indent = 0) {
+    const type = node.type
+    const desc = type === 'Root' ? '' : type === 'Element' ? node.tag : node.content
+    console.log(`${'_'.repeat(indent)}${type}:${desc}`)
+    if (node.children) {
+      node.children.forEach( n => dump(n,indent + 2) )
+    }
+  }
+
+  function traverseNode(ast, context) {
+    context.currentNode = ast
+    const transforms = context.transforms
+
+    if (transforms) {
+      for (let i = 0; i < transforms.length;i++) {
+        transforms[i](context.currentNode, context)
+        if (!context.currentNode) return
+      }
+    }
+
+    const children = context.currentNode.children
+    if (children) {
+      for (let i = 0; i < children.length;i++) {
+        context.parent = context.currentNode
+        context.childIndex = i
+        traverseNode(children[i], context)
+      }
+    }
+  }
+
+  function traverse(ast) {
+    const context = {
+      currentNode: null,
+      parent: null,
+      childIndex: 0,
+      replaceNode(node) {
+        context.parent.children[context.childIndex] = node
+        context.currentNode = node
+      },
+      removeNode() {
+        if (context.parent) {
+          context.parent.children.splice(context.childIndex, 1)
+          context.currentNode = null
+        }
+      },
+      transforms: [
+        transformText,
+        transformElement
+      ]
+    }
+    console.log('前面')
+    dump(ast)
+    traverseNode(ast, context)
+    console.log('后面')
+    dump(ast)
+  }
+
+  function transformText(node, context) {
+    if (node.type === 'Text') {
+      // node.content = node.content.repeat(2)
+
+      // context.replaceNode({
+      //   type: 'Element',
+      //   tag: 'span'
+      // })
+
+      // context.removeNode()
+    }
+  }
+
+  function transformElement(node, context) {
+    if (node.type === 'Element'  && node.tag === 'p') {
+      node.tag = 'h1'
+    }
+  }
+
+  const ast = pasre(template)
+  traverse(ast)
 
 
 
