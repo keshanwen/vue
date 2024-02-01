@@ -159,23 +159,35 @@
 
   function traverseNode(ast, context) {
     context.currentNode = ast
+    const exitFns = []
     const transforms = context.transforms
-
     if (transforms) {
-      for (let i = 0; i < transforms.length;i++) {
-        transforms[i](context.currentNode, context)
+      for (let i = 0; i < transforms.length; i++) {
+        // 转换逻辑执行后返回一个该节点退出阶段才执行的回调函数
+        const exitFn = transforms[i](context.currentNode, context)
+        // 如果存在的话， 就推进退出阶段执行的回调函数数组中，在子节点全部处理完之后遍历执行
+        if (exitFn) {
+          exitFns.push(exitFn)
+        }
         if (!context.currentNode) return
       }
     }
 
     const children = context.currentNode.children
     if (children) {
-      for (let i = 0; i < children.length;i++) {
+      for (let i = 0; i < children.length; i++) {
         context.parent = context.currentNode
         context.childIndex = i
-        traverseNode(children[i], context)
+        traverseNode(children[i],context)
       }
     }
+
+    // 子节点全部处理完毕， 退出要执行回调函数
+    let len = exitFns.length
+    while(len--) {
+      exitFns[len]()
+    }
+
   }
 
   function traverse(ast) {
@@ -207,7 +219,7 @@
 
   function transformText(node, context) {
     if (node.type === 'Text') {
-      // node.content = node.content.repeat(2)
+      node.content = node.content.repeat(2)
 
       // context.replaceNode({
       //   type: 'Element',
@@ -215,13 +227,22 @@
       // })
 
       // context.removeNode()
+      return () => {
+        console.log('退出 transformText', node)
+      }
     }
+
   }
 
   function transformElement(node, context) {
     if (node.type === 'Element'  && node.tag === 'p') {
       node.tag = 'h1'
+      return () => {
+        console.log('退出 transformElement', node)
+      }
     }
+
+
   }
 
   const ast = pasre(template)
