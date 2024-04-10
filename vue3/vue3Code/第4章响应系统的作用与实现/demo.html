@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+
+</body>
+</html>
+<script>
+
+const data = {
+  text: 'hello wrold',
+  ok: true
+}
+let activeEffect;
+const bucket = new WeakMap();
+
+function effect(fn) {
+  const effectFn = () => {
+    cleanup(effectFn)
+    activeEffect = effectFn
+    fn()
+  }
+  effectFn.deps = []
+  effectFn()
+}
+
+
+function cleanup(effectFn) {
+  for (let i = 0,len = effectFn.deps.length; i < len; i++) {
+    let deps = effectFn.deps[i]
+    deps.delete(effectFn)
+  }
+  effectFn.deps.length = 0
+}
+
+const obj = new Proxy(data,{
+  get(target,p,receiver) {
+    track(target,p)
+    return Reflect.get(...arguments)
+  },
+  set(target,p,value, receiver) {
+    Reflect.set(...arguments)
+    trigger(target,p)
+    return Reflect.set(...arguments)
+  }
+})
+
+function track(target, key) {
+  if (!activeEffect) return target[key]
+  let depsMap = bucket.get(target)
+  if (!depsMap) {
+    bucket.set(target, depsMap = new Map())
+  }
+  let deps = depsMap.get(key)
+  if (!deps) {
+    depsMap.set(key, (deps = new Set()))
+  }
+  deps.add(activeEffect)
+  activeEffect.deps.push(deps)
+}
+
+function trigger(target, key) {
+  const depsMap = bucket.get(target)
+  if (!depsMap) return
+  const effects = depsMap.get(key)
+  const effectToRun = new Set(effects)
+  effectToRun && effectToRun.forEach( fn => {
+    if (typeof fn === 'function') fn()
+  })
+}
+
+effect( () => {
+  document.body.innerHTML = obj.text
+})
+
+setTimeout( () => {
+  obj.text = 'hello wrold'
+})
+
+
+
+
+
+
+
+
+
+</script>
