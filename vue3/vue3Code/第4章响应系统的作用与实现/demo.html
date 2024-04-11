@@ -13,19 +13,26 @@
 
 const data = {
   text: 'hello wrold',
-  ok: true
+  ok: true,
+  foo: true,
+  bar: true,
+  num: 1
 }
 let activeEffect;
+let effectStack = [];
 const bucket = new WeakMap();
 
 function effect(fn) {
-  const effectFn = () => {
-    cleanup(effectFn)
-    activeEffect = effectFn
-    fn()
-  }
-  effectFn.deps = []
-  effectFn()
+ const effectFn = () => {
+   cleanup(effectFn)
+   activeEffect = effectFn
+   effectStack.push(activeEffect)
+   fn()
+   effectStack.pop()
+   activeEffect = effectStack[effectStack.length - 1]
+ }
+ effectFn.deps = []
+ effectFn()
 }
 
 
@@ -60,6 +67,7 @@ function track(target, key) {
     depsMap.set(key, (deps = new Set()))
   }
   deps.add(activeEffect)
+  // 双向收集
   activeEffect.deps.push(deps)
 }
 
@@ -67,24 +75,25 @@ function trigger(target, key) {
   const depsMap = bucket.get(target)
   if (!depsMap) return
   const effects = depsMap.get(key)
-  const effectToRun = new Set(effects)
-  effectToRun && effectToRun.forEach( fn => {
-    if (typeof fn === 'function') fn()
+  const effectToRun = new Set()
+
+  effects && effects.forEach( (item) => {
+    if (item !== activeEffect) {
+      effectToRun.add(item)
+    }
   })
+
+  effectToRun.forEach( effectFn => effectFn())
 }
 
+
+
+
 effect( () => {
-  document.body.innerHTML = obj.text
+  obj.num++
 })
 
-setTimeout( () => {
-  obj.text = 'hello wrold'
-})
-
-
-
-
-
+console.log(obj.num)
 
 
 
