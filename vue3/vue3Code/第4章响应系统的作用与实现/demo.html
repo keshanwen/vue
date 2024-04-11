@@ -22,7 +22,20 @@ let activeEffect;
 let effectStack = [];
 const bucket = new WeakMap();
 
-function effect(fn) {
+let jobQueue = new Set()
+const p = Promise.resolve()
+let isFlushing = false
+function flushJob() {
+  if (isFlushing) return
+  isFlushing = true
+  p.then( () => {
+    jobQueue.forEach( effectFn => effectFn())
+  }).finally( () => {
+    isFlushing = false
+  })
+}
+
+function effect(fn,options = {}) {
  const effectFn = () => {
    cleanup(effectFn)
    activeEffect = effectFn
@@ -32,6 +45,7 @@ function effect(fn) {
    activeEffect = effectStack[effectStack.length - 1]
  }
  effectFn.deps = []
+ effectFn.options = options
  effectFn()
 }
 
@@ -83,18 +97,25 @@ function trigger(target, key) {
     }
   })
 
-  effectToRun.forEach( effectFn => effectFn())
+  effectToRun && effectToRun.forEach( fn => {
+    if (fn.options.scheduler) {
+      fn.options.scheduler(fn)
+    } else {
+      fn()
+    }
+  })
 }
 
 
 
-
 effect( () => {
-  obj.num++
+  console.log(obj.foo)
+}, {
+  scheduler(fn) {
+    jobQueue.add(fn)
+    flushJob()
+  }
 })
-
-console.log(obj.num)
-
 
 
 
