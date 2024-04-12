@@ -40,13 +40,18 @@ function effect(fn,options = {}) {
    cleanup(effectFn)
    activeEffect = effectFn
    effectStack.push(activeEffect)
-   fn()
+   const res = fn()
    effectStack.pop()
    activeEffect = effectStack[effectStack.length - 1]
+   return res
  }
  effectFn.deps = []
  effectFn.options = options
- effectFn()
+ if (options.lazy) {
+  return effectFn
+ } else {
+   effectFn()
+ }
 }
 
 
@@ -106,6 +111,39 @@ function trigger(target, key) {
   })
 }
 
+
+function computed(getter) {
+  let value,
+    dirty = true;
+   const effectFn = effect(getter, {
+    lazy: true,
+    scheduler(fn) {
+      dirty = true
+      trigger(obj, 'value')
+    }
+   })
+
+   const obj = {
+    get value() {
+      if (dirty) {
+        value = effectFn()
+        dirty = false
+      }
+      track(obj, 'value')
+      return value
+    }
+   }
+
+   return obj
+}
+
+const o = computed( () => {
+  return obj.foo + obj.bar
+})
+
+effect( () => {
+  console.log(o.value)
+})
 
 
 effect( () => {
