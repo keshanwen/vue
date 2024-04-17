@@ -110,23 +110,29 @@ const data = {
   bar: 2
 }
 
-function createReactive(obj, isShallow = false) {
+function createReactive(obj, isShallow = false, isReadonly = false) {
   return new Proxy(obj, {
     get(target, key, receiver) {
       if (key === 'raw') {
         return target
       }
       const res = Reflect.get(target, key, receiver)
-      track(target, key)
+      if (!isReadonly) {
+        track(target, key)
+      }
       if (isShallow) {
         return res
       }
       if (typeof res === 'object' && res !== null) {
-        return createReactive(res)
+        return isReadonly ? readonly(res) : createReactive(res)
       }
       return res
     },
     set(target,p,value,receiver) {
+      if (isReadonly) {
+        console.warn(`属性${key}是只读`)
+        return true
+      }
       const oldValue = target[p]
       const type = Object.prototype.hasOwnProperty.call(target,p) ? 'SET' : 'ADD'
       const res = Reflect.set(...arguments)
@@ -146,6 +152,10 @@ function createReactive(obj, isShallow = false) {
       return Reflect.ownKeys(target)
     },
     deleteProperty(target, p) {
+      if (isReadonly) {
+        console.warn(`属性${key}是只读`)
+        return true
+      }
       const hasKey = Object.prototype.hasOwnProperty.call(target, p)
       const res = Reflect.deleteProperty(target, p)
       if (hasKey && res) {
@@ -165,4 +175,12 @@ function shallowReactive(obj) {
   return createReactive(obj, true)
 }
 
+
+function readonly(obj) {
+  return createReactive(obj, false, true)
+}
+
+function shallowReadonly(obj) {
+  return createReactive(obj, true, true)
+}
 </script>
