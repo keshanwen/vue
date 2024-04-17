@@ -78,30 +78,40 @@ function trigger(target, key, type) {
   const depsMap = bucket.get(target)
   if (!depsMap) return
   const effects = depsMap.get(key)
-  const iterateEffects = depsMap.get(ITERATE_KEY)
 
-  const effectToRun = new Set()
-  effects && effects.forEach( effectFn => {
+  const effectsToRun = new Set()
+  effects && effects.forEach(effectFn => {
     if (effectFn !== activeEffect) {
-      effectToRun.add(effectFn)
+      effectsToRun.add(effectFn)
     }
   })
 
   if (type === 'ADD' || type === 'DELETE') {
-    iterateEffects && iterateEffects.forEach( fn => {
-      if (fn !== activeEffect) {
-        effectToRun.add(fn)
+    const iterateEffects = depsMap.get(ITERATE_KEY)
+    iterateEffects && iterateEffects.forEach(effectFn => {
+      if (effectFn !== activeEffect) {
+        effectsToRun.add(effectFn)
       }
     })
   }
 
-  effectToRun && effectToRun.forEach( fn => {
-    if (fn.options.scheduler) {
-      fn.options.scheduler(fn)
+  if (type === 'ADD' && Array.isArray(target)) {
+    const lengthEffects = depsMap.get('length')
+    lengthEffects && lengthEffects.forEach(effectFn => {
+      if (effectFn !== activeEffect) {
+        effectsToRun.add(effectFn)
+      }
+    })
+  }
+
+    effectsToRun.forEach(effectFn => {
+    if (effectFn.options.scheduler) {
+      effectFn.options.scheduler(effectFn)
     } else {
-      fn()
+      effectFn()
     }
   })
+
 }
 
 
@@ -134,7 +144,7 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
         return true
       }
       const oldValue = target[p]
-      const type = Object.prototype.hasOwnProperty.call(target,p) ? 'SET' : 'ADD'
+      const type = Array.isArray(target) ? Number(p) < target.length ? 'SET' : 'ADD' : Object.prototype.hasOwnProperty(target,p) ? 'SET' : 'ADD'
       const res = Reflect.set(...arguments)
       if (receiver.raw === target) {
         if (oldValue !== value && (!Number.isNaN(oldValue) || !Number.isNaN(value))) {
