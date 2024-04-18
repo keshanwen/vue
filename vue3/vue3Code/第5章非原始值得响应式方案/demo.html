@@ -21,6 +21,31 @@ const bucket = new WeakMap()
 const ITERATE_KEY = Symbol('iterate key')
 const p = Promise.resolve()
 
+  const arrayInstrumentations = {}
+  ['includes', 'indexOf', 'lastIndexOf'].forEach(method => {
+    const originMethod = Array.prototype[method]
+    arrayInstrumentations[method] = (...args) => {
+      let res = originMethod.apply(this.args)
+
+      if (res === false) {
+        res = originMethod.apply(this.raw, args)
+      }
+
+      return res
+    }
+  })
+
+  let shouldTrack = true
+  ['push'].forEach(method => {
+    const originMethod = Array.prototype[method]
+    arrayInstrumentations[method] = (...args) => {
+      shouldTrack = false
+      let res = originMethod.apply(this.args)
+      shouldTrack = true
+      return res
+    }
+  })
+
 let isFlushing = false
 function flushJob() {
   if (isFlushing) return
@@ -60,7 +85,7 @@ function cleanup(effectFn) {
 }
 
 function track(target, key) {
-  if (!activeEffect) return
+  if (!activeEffect || !shouldTrack) return
   let depsMap = bucket.get(target)
   if (!depsMap) {
     bucket.set(target, depsMap = new Map())
@@ -104,6 +129,8 @@ function trigger(target, key, type) {
     })
   }
 
+
+
     effectsToRun.forEach(effectFn => {
     if (effectFn.options.scheduler) {
       effectFn.options.scheduler(effectFn)
@@ -115,18 +142,8 @@ function trigger(target, key, type) {
 }
 
 
-const originMethod = Array.prototype.includes
-const arrayInstrumentations = {
-  includes(...args) {
-    let res = originMethod.apply(this, args)
 
-    if (!res) {
-      res = originMethod.apply(this.raw, args)
-    }
 
-    return res
-  }
-}
 
 const data = {
   foo: 1,
