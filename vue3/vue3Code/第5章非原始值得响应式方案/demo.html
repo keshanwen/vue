@@ -115,6 +115,19 @@ function trigger(target, key, type) {
 }
 
 
+const originMethod = Array.prototype.includes
+const arrayInstrumentations = {
+  includes(...args) {
+    let res = originMethod.apply(this, args)
+
+    if (!res) {
+      res = originMethod.apply(this.raw, args)
+    }
+
+    return res
+  }
+}
+
 const data = {
   foo: 1,
   bar: 2
@@ -126,8 +139,11 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
       if (key === 'raw') {
         return target
       }
+      if (Array.isArray(target) && arrayInstrumentations.hasOwnProperty(key)) {
+        return Reflect.get(arrayInstrumentations, key, receiver)
+      }
       const res = Reflect.get(target, key, receiver)
-      if (!isReadonly) {
+      if (!isReadonly && typeof key !== 'symbol') {
         track(target, key)
       }
       if (isShallow) {
@@ -158,7 +174,7 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
       return Reflect.has(target, p)
     },
     ownKeys(target) {
-      track(target, ITERATE_KEY)
+      track(target, Array.isArray(target) ? 'length' : ITERATE_KEY)
       return Reflect.ownKeys(target)
     },
     deleteProperty(target, p) {
@@ -176,9 +192,14 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
   })
 }
 
+const reactiveMap = new Map()
 
 function reactive(obj) {
-  return createReactive(obj)
+  const existionProxy = reactiveMap.get(obj)
+  if (existionProxy) return existionProxy
+  const proxy = createReactive(obj)
+  reactiveMap.set(obj, proxy)
+  return proxy
 }
 
 function shallowReactive(obj) {
